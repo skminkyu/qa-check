@@ -44,9 +44,9 @@ export async function getSessionFromRequest(req: NextRequest): Promise<TokenPayl
 }
 
 export function setCookieHeader(token: string) {
-  return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`;
+  return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=${7 * 24 * 60 * 60}`;
 }
 
 export function clearCookieHeader() {
-  return `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  return `${COOKIE}=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0`;
 }
