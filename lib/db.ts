@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const DB_DIR = path.join(process.cwd(), 'data');
+const DB_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 const DB_PATH = path.join(DB_DIR, 'qa.db');
 
 let db: Database.Database;
@@ -49,6 +49,7 @@ function initSchema(db: Database.Database) {
       name TEXT NOT NULL,
       partner_name TEXT,
       md_name TEXT,
+      product_notes TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -71,6 +72,11 @@ function initSchema(db: Database.Database) {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // Migration: add product_notes if not exists
+  try {
+    db.exec('ALTER TABLE products ADD COLUMN product_notes TEXT');
+  } catch {}
 
   seedDefaults(db);
 }

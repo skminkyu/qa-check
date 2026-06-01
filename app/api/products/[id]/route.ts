@@ -27,8 +27,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await getSession();
   if (!session || session.role === 'viewer') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await params;
-  const { name, partnerName, mdName } = await req.json();
-  getDb().prepare('UPDATE products SET name=?, partner_name=?, md_name=?, updated_at=datetime(\'now\') WHERE id=?').run(name, partnerName, mdName, id);
+  const { name, partnerName, mdName, productNotes } = await req.json();
+  const db = getDb();
+  if (productNotes !== undefined) {
+    db.prepare('UPDATE products SET product_notes=?, updated_at=datetime(\'now\') WHERE id=?').run(productNotes, id);
+  }
+  if (name !== undefined) {
+    db.prepare('UPDATE products SET name=?, partner_name=?, md_name=?, updated_at=datetime(\'now\') WHERE id=?').run(name, partnerName, mdName, id);
+  }
   return NextResponse.json({ ok: true });
 }
 

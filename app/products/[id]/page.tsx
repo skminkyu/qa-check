@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db';
 import NavBar from '@/components/NavBar';
 import QATable from '@/components/QATable';
 import ShareButton from '@/components/ShareButton';
+import ProductNotes from '@/components/ProductNotes';
 import Link from 'next/link';
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +18,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; created_at: string } | undefined;
+  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string } | undefined;
 
   if (!product) notFound();
 
@@ -61,7 +62,20 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           )}
         </div>
 
-        <QATable productId={id} initialRecords={records} readOnly={readOnly} />
+        {/* 상품확인정보 */}
+        <div className="mb-6">
+          <ProductNotes
+            productId={id}
+            initialNotes={product.product_notes || ''}
+            readOnly={readOnly}
+          />
+        </div>
+
+        {/* QA 체크리스트 */}
+        <div>
+          <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
+          <QATable productId={id} initialRecords={records} readOnly={readOnly} />
+        </div>
       </main>
     </div>
   );

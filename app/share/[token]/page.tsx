@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getDb } from '@/lib/db';
 import QATable from '@/components/QATable';
+import ProductNotes from '@/components/ProductNotes';
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -13,7 +14,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; created_at: string } | undefined;
+  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string } | undefined;
 
   if (!product) notFound();
 
@@ -27,9 +28,6 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   `).all(shareRow.product_id, shareRow.product_id) as Array<{
     template_id: string; item_name: string; sort_order: number; status: string; qa_notes: string; standard_notes: string;
   }>;
-
-  const done = records.filter(r => r.status === '완료').length;
-  const pct = records.length > 0 ? Math.round((done / records.length) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -46,7 +44,13 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             {product.md_name && <span>MD: <strong className="text-slate-700">{product.md_name}</strong></span>}
           </div>
         </div>
-        <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
+        <div className="mb-6">
+          <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
+          <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
+        </div>
       </main>
     </div>
   );
