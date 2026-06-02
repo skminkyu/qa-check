@@ -90,9 +90,11 @@ function seedDefaults(db: Database.Database) {
 
   // Default admin
   const adminId = uuidv4();
-  const hash = bcrypt.hashSync('admin1234', 10);
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@qa.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin1234';
+  const hash = bcrypt.hashSync(adminPassword, 10);
   db.prepare('INSERT INTO users (id, email, name, password_hash, role) VALUES (?,?,?,?,?)').run(
-    adminId, 'admin@qa.com', '관리자', hash, 'admin'
+    adminId, adminEmail, '관리자', hash, 'admin'
   );
 
   // Default category: 화장품
