@@ -15,6 +15,7 @@ export interface QARecord {
   id?: string;
   template_id: string;
   item_name: string;
+  standard?: string;
   sort_order: number;
   status: string;
   qa_notes?: string;
@@ -133,6 +134,9 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                     )}
                   </td>
                   <td className="px-4 py-3">
+                    {r.standard && (
+                      <div className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-1.5 whitespace-pre-wrap">{r.standard}</div>
+                    )}
                     {readOnly ? (
                       <div className="text-slate-600 text-xs whitespace-pre-wrap">{r.standard_notes || ''}</div>
                     ) : (
