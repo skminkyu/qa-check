@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 interface Category { id: string; name: string; }
-interface Template { id: string; category_id: string; item_name: string; standard: string; sort_order: number; }
+interface Template { id: string; category_id: string; item_name: string; standard: string; file_url: string; sort_order: number; }
 interface User { id: string; email: string; name: string; role: string; created_at: string; }
 
 interface Props {
@@ -47,7 +47,7 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
     const res = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ categoryId: selectedCat, itemName: newItem }) });
     const data = await res.json();
     if (res.ok) {
-      setTemplates(t => [...t, { id: data.id, category_id: selectedCat, item_name: data.itemName, standard: '', sort_order: data.sortOrder }]);
+      setTemplates(t => [...t, { id: data.id, category_id: selectedCat, item_name: data.itemName, standard: '', file_url: '', sort_order: data.sortOrder }]);
       setNewItem('');
       flash('항목 추가됨');
     }
@@ -62,6 +62,12 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
     await fetch(`/api/templates/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ standard }) });
     setTemplates(t => t.map(x => x.id === id ? { ...x, standard } : x));
     flash('기준 저장됨');
+  }
+
+  async function updateFileUrl(id: string, fileUrl: string | null) {
+    await fetch(`/api/templates/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fileUrl }) });
+    setTemplates(t => t.map(x => x.id === id ? { ...x, file_url: fileUrl || '' } : x));
+    flash(fileUrl ? '파일 연결됨' : '파일 삭제됨');
   }
 
   async function deleteItem(id: string) {
@@ -179,6 +185,25 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
                           className="w-full text-xs border border-amber-200 rounded px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none text-slate-700"
                         />
                         <div className="text-xs text-amber-600 mt-1">포커스 밖으로 나가면 자동 저장됩니다.</div>
+                        <div className="mt-3 border-t border-amber-200 pt-3">
+                          <div className="text-xs font-semibold text-amber-700 mb-1.5">📎 첨부 파일</div>
+                          {t.file_url ? (
+                            <div className="flex items-center gap-2">
+                              <a href={t.file_url} download className="text-xs text-blue-600 underline truncate max-w-xs">{t.file_url.split('/').pop()}</a>
+                              <button onClick={() => updateFileUrl(t.id, null)} className="text-xs text-red-400 hover:text-red-600 transition shrink-0">삭제</button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 items-center">
+                              <input
+                                type="text"
+                                placeholder="/attachments/파일명.docx"
+                                className="flex-1 text-xs border border-amber-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+                                onBlur={e => { if (e.target.value.trim()) updateFileUrl(t.id, e.target.value.trim()); }}
+                              />
+                              <span className="text-xs text-amber-600 shrink-0">경로 입력 후 포커스 이동</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </li>

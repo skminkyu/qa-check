@@ -77,6 +77,7 @@ function initSchema(db: Database.Database) {
   // Migrations
   try { db.exec('ALTER TABLE products ADD COLUMN product_notes TEXT'); } catch {}
   try { db.exec('ALTER TABLE qa_templates ADD COLUMN standard TEXT'); } catch {}
+  try { db.exec('ALTER TABLE qa_templates ADD COLUMN file_url TEXT'); } catch {}
 
   seedDefaults(db);
 }

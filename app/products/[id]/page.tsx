@@ -23,14 +23,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   if (!product) notFound();
 
   const records = db.prepare(`
-    SELECT r.id, r.product_id, t.id as template_id, t.item_name, t.standard, t.sort_order,
+    SELECT r.id, r.product_id, t.id as template_id, t.item_name, t.standard, t.file_url, t.sort_order,
       COALESCE(r.status, '미완료') as status, r.qa_notes, r.standard_notes
     FROM qa_templates t
     LEFT JOIN qa_records r ON r.template_id = t.id AND r.product_id = ?
     WHERE t.category_id = (SELECT category_id FROM products WHERE id = ?)
     ORDER BY t.sort_order
   `).all(id, id) as Array<{
-    id: string; product_id: string; template_id: string; item_name: string; standard: string; sort_order: number;
+    id: string; product_id: string; template_id: string; item_name: string; standard: string; file_url: string; sort_order: number;
     status: string; qa_notes: string; standard_notes: string;
   }>;
 

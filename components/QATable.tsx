@@ -16,6 +16,7 @@ export interface QARecord {
   template_id: string;
   item_name: string;
   standard?: string;
+  file_url?: string;
   sort_order: number;
   status: string;
   qa_notes?: string;
@@ -136,6 +137,11 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                   <td className="px-4 py-3">
                     {r.standard && (
                       <div className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-1.5 whitespace-pre-wrap">{r.standard}</div>
+                    )}
+                    {r.file_url && (
+                      <a href={r.file_url} download className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded px-2 py-0.5 mb-1.5 transition">
+                        ⬇ {r.file_url.split('/').pop()}
+                      </a>
                     )}
                     {readOnly ? (
                       <div className="text-slate-600 text-xs whitespace-pre-wrap">{r.standard_notes || ''}</div>
