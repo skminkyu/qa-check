@@ -39,6 +39,7 @@ function initSchema(db: Database.Database) {
       id TEXT PRIMARY KEY,
       category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
       item_name TEXT NOT NULL,
+      standard TEXT,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -73,10 +74,9 @@ function initSchema(db: Database.Database) {
     );
   `);
 
-  // Migration: add product_notes if not exists
-  try {
-    db.exec('ALTER TABLE products ADD COLUMN product_notes TEXT');
-  } catch {}
+  // Migrations
+  try { db.exec('ALTER TABLE products ADD COLUMN product_notes TEXT'); } catch {}
+  try { db.exec('ALTER TABLE qa_templates ADD COLUMN standard TEXT'); } catch {}
 
   seedDefaults(db);
 }

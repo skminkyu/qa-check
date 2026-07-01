@@ -19,14 +19,14 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   if (!product) notFound();
 
   const records = db.prepare(`
-    SELECT t.id as template_id, t.item_name, t.sort_order,
+    SELECT t.id as template_id, t.item_name, t.standard, t.sort_order,
       COALESCE(r.status, '미완료') as status, r.qa_notes, r.standard_notes
     FROM qa_templates t
     LEFT JOIN qa_records r ON r.template_id = t.id AND r.product_id = ?
     WHERE t.category_id = (SELECT category_id FROM products WHERE id = ?)
     ORDER BY t.sort_order
   `).all(shareRow.product_id, shareRow.product_id) as Array<{
-    template_id: string; item_name: string; sort_order: number; status: string; qa_notes: string; standard_notes: string;
+    template_id: string; item_name: string; standard: string; sort_order: number; status: string; qa_notes: string; standard_notes: string;
   }>;
 
   return (

@@ -12,7 +12,7 @@ export default async function SettingsPage() {
   const db = getDb();
   const categories = db.prepare('SELECT * FROM categories ORDER BY created_at').all() as Array<{ id: string; name: string }>;
   const templates = db.prepare('SELECT * FROM qa_templates ORDER BY category_id, sort_order').all() as Array<{
-    id: string; category_id: string; item_name: string; sort_order: number;
+    id: string; category_id: string; item_name: string; standard: string; sort_order: number;
   }>;
   const users = session.role === 'admin'
     ? db.prepare('SELECT id, email, name, role, created_at FROM users ORDER BY created_at').all() as Array<{ id: string; email: string; name: string; role: string; created_at: string }>

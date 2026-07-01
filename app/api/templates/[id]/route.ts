@@ -6,10 +6,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await getSession();
   if (!session || session.role === 'viewer') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await params;
-  const { itemName, sortOrder } = await req.json();
+  const { itemName, sortOrder, standard } = await req.json();
   const db = getDb();
   if (itemName !== undefined) db.prepare('UPDATE qa_templates SET item_name = ? WHERE id = ?').run(itemName, id);
   if (sortOrder !== undefined) db.prepare('UPDATE qa_templates SET sort_order = ? WHERE id = ?').run(sortOrder, id);
+  if (standard !== undefined) db.prepare('UPDATE qa_templates SET standard = ? WHERE id = ?').run(standard, id);
   return NextResponse.json({ ok: true });
 }
 

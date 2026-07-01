@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 interface Category { id: string; name: string; }
-interface Template { id: string; category_id: string; item_name: string; sort_order: number; }
+interface Template { id: string; category_id: string; item_name: string; standard: string; sort_order: number; }
 interface User { id: string; email: string; name: string; role: string; created_at: string; }
 
 interface Props {
@@ -19,6 +19,7 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
   const [selectedCat, setSelectedCat] = useState(initialCategories[0]?.id || '');
   const [newCatName, setNewCatName] = useState('');
   const [newItem, setNewItem] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ email: '', name: '', password: '', role: 'editor' });
   const [tab, setTab] = useState<'categories' | 'users'>('categories');
   const [msg, setMsg] = useState('');
@@ -45,12 +46,22 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
     if (!newItem.trim() || !selectedCat) return;
     const res = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ categoryId: selectedCat, itemName: newItem }) });
     const data = await res.json();
-    if (res.ok) { setTemplates(t => [...t, { id: data.id, category_id: selectedCat, item_name: data.itemName, sort_order: data.sortOrder }]); setNewItem(''); flash('항목 추가됨'); }
+    if (res.ok) {
+      setTemplates(t => [...t, { id: data.id, category_id: selectedCat, item_name: data.itemName, standard: '', sort_order: data.sortOrder }]);
+      setNewItem('');
+      flash('항목 추가됨');
+    }
   }
 
   async function updateItem(id: string, itemName: string) {
     await fetch(`/api/templates/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemName }) });
     setTemplates(t => t.map(x => x.id === id ? { ...x, item_name: itemName } : x));
+  }
+
+  async function updateStandard(id: string, standard: string) {
+    await fetch(`/api/templates/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ standard }) });
+    setTemplates(t => t.map(x => x.id === id ? { ...x, standard } : x));
+    flash('기준 저장됨');
   }
 
   async function deleteItem(id: string) {
@@ -136,14 +147,40 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
                   <li className="px-4 py-6 text-center text-slate-400 text-sm">항목이 없습니다.</li>
                 )}
                 {catTemplates.map((t, i) => (
-                  <li key={t.id} className="flex items-center gap-3 px-4 py-2">
-                    <span className="text-xs text-slate-400 w-5">{i + 1}</span>
-                    <input
-                      defaultValue={t.item_name}
-                      onBlur={e => updateItem(t.id, e.target.value)}
-                      className="flex-1 text-sm border-0 focus:outline-none focus:ring-1 focus:ring-blue-300 rounded px-1 py-0.5"
-                    />
-                    <button onClick={() => deleteItem(t.id)} className="text-slate-300 hover:text-red-400 text-xs transition">✕</button>
+                  <li key={t.id} className="px-4 py-2">
+                    {/* 항목명 행 */}
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-slate-400 w-5 shrink-0">{i + 1}</span>
+                      <input
+                        defaultValue={t.item_name}
+                        onBlur={e => updateItem(t.id, e.target.value)}
+                        className="flex-1 text-sm border-0 focus:outline-none focus:ring-1 focus:ring-blue-300 rounded px-1 py-0.5"
+                      />
+                      {/* 기준 토글 버튼 */}
+                      <button
+                        onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                        className={`text-xs px-2 py-0.5 rounded border transition shrink-0 ${t.standard ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-400 hover:border-blue-300 hover:text-blue-500'}`}
+                        title="기준 편집"
+                      >
+                        {t.standard ? '기준 ✓' : '+ 기준'}
+                      </button>
+                      <button onClick={() => deleteItem(t.id)} className="text-slate-300 hover:text-red-400 text-xs transition shrink-0">✕</button>
+                    </div>
+
+                    {/* 기준 입력 영역 (펼침) */}
+                    {expandedId === t.id && (
+                      <div className="mt-2 ml-8 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div className="text-xs font-semibold text-amber-700 mb-1.5">📋 제출 기준</div>
+                        <textarea
+                          defaultValue={t.standard || ''}
+                          onBlur={e => updateStandard(t.id, e.target.value)}
+                          rows={4}
+                          placeholder={`예시:\n국내원료 - 생산지증명원 또는 원산지 증명서 (2026년 기준)\n수입원료 - 수입신고필증, 식품등의 수입신고확인증 (2026년 기준)`}
+                          className="w-full text-xs border border-amber-200 rounded px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none text-slate-700"
+                        />
+                        <div className="text-xs text-amber-600 mt-1">포커스 밖으로 나가면 자동 저장됩니다.</div>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -160,7 +197,6 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
 
       {tab === 'users' && userRole === 'admin' && (
         <div className="space-y-6">
-          {/* User list */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-600">사용자 목록</div>
             <table className="w-full text-sm">
@@ -196,7 +232,6 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
             </table>
           </div>
 
-          {/* Add user */}
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <div className="text-sm font-semibold text-slate-700 mb-4">사용자 추가</div>
             <div className="grid grid-cols-2 gap-4">
