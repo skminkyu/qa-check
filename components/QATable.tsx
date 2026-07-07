@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 
 const InlineEditor = dynamic(() => import('./InlineEditor'), { ssr: false });
@@ -35,12 +35,13 @@ interface Props {
   readOnly?: boolean;
 }
 
-
 export default function QATable({ productId, initialRecords, readOnly = false }: Props) {
   const [records, setRecords] = useState<QARecord[]>(
     initialRecords.map(r => ({ ...r, status: r.status || '미완료' }))
   );
   const [saving, setSaving] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [dueDateSort, setDueDateSort] = useState<'asc' | 'desc' | null>(null);
 
   const save = useCallback(async (record: QARecord) => {
     if (readOnly) return;
@@ -73,6 +74,29 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
   const effective = records.length - na;
   const pct = effective > 0 ? Math.round((done / effective) * 100) : 0;
 
+  const displayed = useMemo(() => {
+    let list = filterStatus ? records.filter(r => r.status === filterStatus) : [...records];
+    if (dueDateSort) {
+      list = list.sort((a, b) => {
+        const da = a.due_date || '';
+        const db = b.due_date || '';
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return dueDateSort === 'asc' ? da.localeCompare(db) : db.localeCompare(da);
+      });
+    }
+    return list;
+  }, [records, filterStatus, dueDateSort]);
+
+  function toggleDueDateSort() {
+    setDueDateSort(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc');
+  }
+
+  function toggleStatusFilter(s: string) {
+    setFilterStatus(prev => prev === s ? null : s);
+  }
+
   return (
     <div>
       {/* Progress summary */}
@@ -85,8 +109,22 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
           {STATUSES.map(s => {
             const cnt = records.filter(r => r.status === s).length;
             if (cnt === 0) return null;
-            return <span key={s} className={`px-2 py-0.5 rounded-full border ${STATUS_STYLE[s]}`}>{s} {cnt}</span>;
+            const active = filterStatus === s;
+            return (
+              <button
+                key={s}
+                onClick={() => toggleStatusFilter(s)}
+                className={`px-2 py-0.5 rounded-full border transition cursor-pointer ${STATUS_STYLE[s]} ${active ? 'ring-2 ring-offset-1 ring-slate-400 font-bold' : 'opacity-80 hover:opacity-100'}`}
+              >
+                {s} {cnt}
+              </button>
+            );
           })}
+          {filterStatus && (
+            <button onClick={() => setFilterStatus(null)} className="px-2 py-0.5 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-100 transition">
+              전체 보기
+            </button>
+          )}
         </div>
       </div>
 
@@ -97,7 +135,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
             <col style={{ width: '2.5rem' }} />
             <col style={{ width: '13%' }} />
             <col style={{ width: '8rem' }} />
-            <col style={{ width: '8rem' }} />
+            <col style={{ width: '8.5rem' }} />
             <col style={{ width: '22%' }} />
             <col style={{ width: '30%' }} />
             <col style={{ width: '7rem' }} />
@@ -106,15 +144,39 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
             <tr>
               <th className="text-left px-3 py-3 font-semibold text-slate-600">#</th>
               <th className="text-left px-3 py-3 font-semibold text-slate-600">QA 항목</th>
-              <th className="text-left px-3 py-3 font-semibold text-slate-600">상태</th>
-              <th className="text-left px-3 py-3 font-semibold text-slate-600">완료 예정일</th>
+              {/* 상태 헤더 - 필터 드롭다운 */}
+              <th className="text-left px-3 py-3 font-semibold text-slate-600">
+                <div className="flex items-center gap-1">
+                  <span>상태</span>
+                  <select
+                    value={filterStatus || ''}
+                    onChange={e => setFilterStatus(e.target.value || null)}
+                    className="text-xs border border-slate-300 rounded px-1 py-0.5 font-normal text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                  >
+                    <option value="">전체</option>
+                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </th>
+              {/* 완료 예정일 헤더 - 정렬 */}
+              <th className="text-left px-3 py-3 font-semibold text-slate-600">
+                <button
+                  onClick={toggleDueDateSort}
+                  className="flex items-center gap-1 hover:text-blue-600 transition"
+                >
+                  <span>완료 예정일</span>
+                  <span className="text-slate-400">
+                    {dueDateSort === 'asc' ? '↑' : dueDateSort === 'desc' ? '↓' : '↕'}
+                  </span>
+                </button>
+              </th>
               <th className="text-left px-3 py-3 font-semibold text-slate-600">QA 확인 사항</th>
               <th className="text-left px-3 py-3 font-semibold text-slate-600">기준 및 QA 의견</th>
               <th className="text-left px-3 py-3 font-semibold text-slate-600 text-xs">수정 시간</th>
             </tr>
           </thead>
           <tbody>
-            {records.map((r, i) => (
+            {displayed.map((r, i) => (
               <tr key={r.template_id} className="border-b border-slate-100 hover:bg-slate-50 transition align-top">
                 <td className="px-3 py-3 text-slate-400 text-xs">{i + 1}</td>
                 <td className="px-3 py-3 font-medium text-slate-800 text-xs leading-snug">{r.item_name}</td>
@@ -197,6 +259,11 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                 </td>
               </tr>
             ))}
+            {displayed.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-3 py-8 text-center text-slate-400 text-sm">해당 상태의 항목이 없습니다.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

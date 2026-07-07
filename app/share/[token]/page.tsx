@@ -45,11 +45,11 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           </div>
         </div>
         <div className="mb-6">
-          <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
-        </div>
-        <div>
           <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
           <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
+        </div>
+        <div>
+          <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
         </div>
       </main>
     </div>
