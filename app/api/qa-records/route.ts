@@ -7,21 +7,21 @@ export async function PUT(req: NextRequest) {
   const session = await getSession();
   if (!session || session.role === 'viewer') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const { productId, templateId, status, qaNotes, standardNotes } = await req.json();
+  const { productId, templateId, status, qaNotes, standardNotes, dueDate } = await req.json();
   if (!productId || !templateId) return NextResponse.json({ error: '필수값 누락' }, { status: 400 });
 
   const db = getDb();
   const existing = db.prepare('SELECT id FROM qa_records WHERE product_id = ? AND template_id = ?').get(productId, templateId);
   if (existing) {
     db.prepare(`
-      UPDATE qa_records SET status=?, qa_notes=?, standard_notes=?, updated_at=datetime('now')
+      UPDATE qa_records SET status=?, qa_notes=?, standard_notes=?, due_date=?, updated_at=datetime('now')
       WHERE product_id=? AND template_id=?
-    `).run(status, qaNotes, standardNotes, productId, templateId);
+    `).run(status, qaNotes, standardNotes, dueDate ?? null, productId, templateId);
   } else {
     db.prepare(`
-      INSERT INTO qa_records (id, product_id, template_id, status, qa_notes, standard_notes)
-      VALUES (?,?,?,?,?,?)
-    `).run(uuidv4(), productId, templateId, status, qaNotes, standardNotes);
+      INSERT INTO qa_records (id, product_id, template_id, status, qa_notes, standard_notes, due_date)
+      VALUES (?,?,?,?,?,?,?)
+    `).run(uuidv4(), productId, templateId, status, qaNotes, standardNotes, dueDate ?? null);
   }
   return NextResponse.json({ ok: true });
 }
