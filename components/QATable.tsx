@@ -40,7 +40,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
     initialRecords.map(r => ({ ...r, status: r.status || '미완료' }))
   );
   const [saving, setSaving] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [dueDateSort, setDueDateSort] = useState<'asc' | 'desc' | null>(null);
 
   const save = useCallback(async (record: QARecord) => {
@@ -75,7 +75,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
   const pct = effective > 0 ? Math.round((done / effective) * 100) : 0;
 
   const displayed = useMemo(() => {
-    let list = filterStatus ? records.filter(r => r.status === filterStatus) : [...records];
+    let list = filterStatuses.size > 0 ? records.filter(r => filterStatuses.has(r.status)) : [...records];
     if (dueDateSort) {
       list = list.sort((a, b) => {
         const da = a.due_date || '';
@@ -87,14 +87,18 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
       });
     }
     return list;
-  }, [records, filterStatus, dueDateSort]);
+  }, [records, filterStatuses, dueDateSort]);
 
   function toggleDueDateSort() {
     setDueDateSort(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc');
   }
 
   function toggleStatusFilter(s: string) {
-    setFilterStatus(prev => prev === s ? null : s);
+    setFilterStatuses(prev => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s); else next.add(s);
+      return next;
+    });
   }
 
   return (
@@ -109,19 +113,19 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
           {STATUSES.map(s => {
             const cnt = records.filter(r => r.status === s).length;
             if (cnt === 0) return null;
-            const active = filterStatus === s;
+            const active = filterStatuses.has(s);
             return (
               <button
                 key={s}
                 onClick={() => toggleStatusFilter(s)}
-                className={`px-2 py-0.5 rounded-full border transition cursor-pointer ${STATUS_STYLE[s]} ${active ? 'ring-2 ring-offset-1 ring-slate-400 font-bold' : 'opacity-80 hover:opacity-100'}`}
+                className={`px-2 py-0.5 rounded-full border transition cursor-pointer ${STATUS_STYLE[s]} ${active ? 'ring-2 ring-offset-1 ring-slate-400 font-bold' : 'opacity-70 hover:opacity-100'}`}
               >
-                {s} {cnt}
+                {active ? '✓ ' : ''}{s} {cnt}
               </button>
             );
           })}
-          {filterStatus && (
-            <button onClick={() => setFilterStatus(null)} className="px-2 py-0.5 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-100 transition">
+          {filterStatuses.size > 0 && (
+            <button onClick={() => setFilterStatuses(new Set())} className="px-2 py-0.5 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-100 transition">
               전체 보기
             </button>
           )}
@@ -144,19 +148,9 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
             <tr>
               <th className="text-left px-3 py-3 font-semibold text-slate-600">#</th>
               <th className="text-left px-3 py-3 font-semibold text-slate-600">QA 항목</th>
-              {/* 상태 헤더 - 필터 드롭다운 */}
+              {/* 상태 헤더 */}
               <th className="text-left px-3 py-3 font-semibold text-slate-600">
-                <div className="flex items-center gap-1">
-                  <span>상태</span>
-                  <select
-                    value={filterStatus || ''}
-                    onChange={e => setFilterStatus(e.target.value || null)}
-                    className="text-xs border border-slate-300 rounded px-1 py-0.5 font-normal text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-300 bg-white"
-                  >
-                    <option value="">전체</option>
-                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
+                <span>상태{filterStatuses.size > 0 ? ` (${filterStatuses.size})` : ''}</span>
               </th>
               {/* 완료 예정일 헤더 - 정렬 */}
               <th className="text-left px-3 py-3 font-semibold text-slate-600">
