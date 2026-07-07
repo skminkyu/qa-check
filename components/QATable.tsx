@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
 const InlineEditor = dynamic(() => import('./InlineEditor'), { ssr: false });
@@ -42,6 +42,18 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
   const [saving, setSaving] = useState<string | null>(null);
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [dueDateSort, setDueDateSort] = useState<'asc' | 'desc' | null>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setStatusDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const save = useCallback(async (record: QARecord) => {
     if (readOnly) return;
@@ -148,9 +160,44 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
             <tr>
               <th className="text-left px-3 py-3 font-semibold text-slate-600">#</th>
               <th className="text-left px-3 py-3 font-semibold text-slate-600">QA 항목</th>
-              {/* 상태 헤더 */}
+              {/* 상태 헤더 - 다중 필터 드롭다운 */}
               <th className="text-left px-3 py-3 font-semibold text-slate-600">
-                <span>상태{filterStatuses.size > 0 ? ` (${filterStatuses.size})` : ''}</span>
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setStatusDropdownOpen(o => !o)}
+                    className={`flex items-center gap-1 hover:text-blue-600 transition ${filterStatuses.size > 0 ? 'text-blue-600' : ''}`}
+                  >
+                    <span>상태{filterStatuses.size > 0 ? ` (${filterStatuses.size})` : ''}</span>
+                    <span className="text-slate-400 text-xs">{statusDropdownOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {statusDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1 min-w-[7rem]">
+                      {STATUSES.map(s => {
+                        const cnt = records.filter(r => r.status === s).length;
+                        const checked = filterStatuses.has(s);
+                        return (
+                          <label key={s} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleStatusFilter(s)}
+                              className="accent-blue-500"
+                            />
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full border ${STATUS_STYLE[s]}`}>{s}</span>
+                            <span className="text-xs text-slate-400">{cnt}</span>
+                          </label>
+                        );
+                      })}
+                      {filterStatuses.size > 0 && (
+                        <div className="border-t border-slate-100 mt-1 pt-1 px-3 pb-1">
+                          <button onClick={() => { setFilterStatuses(new Set()); setStatusDropdownOpen(false); }} className="text-xs text-slate-500 hover:text-red-500 transition">
+                            초기화
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </th>
               {/* 완료 예정일 헤더 - 정렬 */}
               <th className="text-left px-3 py-3 font-semibold text-slate-600">
