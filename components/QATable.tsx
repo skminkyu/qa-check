@@ -1,5 +1,8 @@
 'use client';
 import { useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+
+const InlineEditor = dynamic(() => import('./InlineEditor'), { ssr: false });
 
 const STATUSES = ['미완료', '진행중', '완료', '해당없음', '보류'];
 
@@ -32,15 +35,6 @@ interface Props {
   readOnly?: boolean;
 }
 
-function renderTextWithLinks(text: string) {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRegex);
-  return parts.map((part, i) =>
-    urlRegex.test(part)
-      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">{part}</a>
-      : <span key={i}>{part}</span>
-  );
-}
 
 export default function QATable({ productId, initialRecords, readOnly = false }: Props) {
   const [records, setRecords] = useState<QARecord[]>(
@@ -163,18 +157,14 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
 
                 {/* QA 확인 사항 */}
                 <td className="px-3 py-3">
-                  {readOnly ? (
-                    <div className="text-slate-600 text-xs whitespace-pre-wrap">{renderTextWithLinks(r.qa_notes || '')}</div>
-                  ) : (
-                    <textarea
-                      value={r.qa_notes || ''}
-                      onChange={e => updateRecord(r.template_id, { qa_notes: e.target.value })}
-                      onBlur={() => save(r)}
-                      rows={3}
-                      placeholder="확인 내용 입력..."
-                      className="w-full text-xs border-0 bg-transparent resize-none focus:outline-none focus:ring-1 focus:ring-blue-300 rounded px-1 py-0.5 text-slate-700 placeholder-slate-300"
-                    />
-                  )}
+                  <InlineEditor
+                    value={r.qa_notes || ''}
+                    onChange={v => updateRecord(r.template_id, { qa_notes: v })}
+                    onBlur={() => save(r)}
+                    placeholder="확인 내용 입력..."
+                    readOnly={readOnly}
+                    rows={3}
+                  />
                 </td>
 
                 {/* 기준 및 QA 의견 */}
@@ -187,18 +177,14 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                       ⬇ {r.file_url.split('/').pop()}
                     </a>
                   )}
-                  {readOnly ? (
-                    <div className="text-slate-600 text-xs whitespace-pre-wrap">{renderTextWithLinks(r.standard_notes || '')}</div>
-                  ) : (
-                    <textarea
-                      value={r.standard_notes || ''}
-                      onChange={e => updateRecord(r.template_id, { standard_notes: e.target.value })}
-                      onBlur={() => save(r)}
-                      rows={3}
-                      placeholder="기준/의견 입력..."
-                      className="w-full text-xs border-0 bg-transparent resize-none focus:outline-none focus:ring-1 focus:ring-blue-300 rounded px-1 py-0.5 text-slate-700 placeholder-slate-300"
-                    />
-                  )}
+                  <InlineEditor
+                    value={r.standard_notes || ''}
+                    onChange={v => updateRecord(r.template_id, { standard_notes: v })}
+                    onBlur={() => save(r)}
+                    placeholder="기준/의견 입력..."
+                    readOnly={readOnly}
+                    rows={3}
+                  />
                 </td>
 
                 {/* 수정 시간 */}
