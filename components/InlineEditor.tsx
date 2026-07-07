@@ -66,6 +66,8 @@ export default function InlineEditor({ value, onChange, onBlur, placeholder, rea
 
   if (!editor) return null;
 
+  if (readOnly && !editor.getText().trim()) return null;
+
   return (
     <div
       className={`w-full text-xs rounded px-1 py-0.5 ${
@@ -76,7 +78,7 @@ export default function InlineEditor({ value, onChange, onBlur, placeholder, rea
     >
       <EditorContent
         editor={editor}
-        style={{ minHeight }}
+        style={{ minHeight: readOnly ? undefined : minHeight }}
         className={`text-slate-700 prose prose-xs max-w-none ${!value && !editor.isFocused ? 'text-slate-300' : ''}`}
       />
       {!editor.isFocused && !editor.getText() && placeholder && (
