@@ -5,7 +5,7 @@ import NavBar from '@/components/NavBar';
 import QATable from '@/components/QATable';
 import ShareButton from '@/components/ShareButton';
 import ProductNotes from '@/components/ProductNotes';
-import Link from 'next/link';
+import ProductHeader from '@/components/ProductHeader';
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -43,20 +43,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <main className="w-full px-4 py-8">
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
-              <Link href="/dashboard" className="hover:text-slate-700">대시보드</Link>
-              <span>/</span>
-              <span>{product.name}</span>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-800">{product.name}</h1>
-            <div className="flex gap-4 mt-2 text-sm text-slate-500">
-              <span>카테고리: <strong className="text-slate-700">{product.category_name}</strong></span>
-              {product.partner_name && <span>협력사: <strong className="text-slate-700">{product.partner_name}</strong></span>}
-              {product.md_name && <span>MD: <strong className="text-slate-700">{product.md_name}</strong></span>}
-              <span>등록일: {product.created_at.slice(0, 10)}</span>
-            </div>
-          </div>
+          <ProductHeader
+            productId={id}
+            initialName={product.name}
+            initialPartnerName={product.partner_name || ''}
+            initialMdName={product.md_name || ''}
+            categoryName={product.category_name}
+            createdAt={product.created_at}
+            readOnly={readOnly}
+          />
           {!readOnly && (
             <ShareButton productId={id} initialToken={shareToken} />
           )}
