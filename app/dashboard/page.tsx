@@ -4,6 +4,7 @@ import { getDb } from '@/lib/db';
 import NavBar from '@/components/NavBar';
 import Link from 'next/link';
 import DashboardClient from '@/components/DashboardClient';
+import DashboardCalendar from '@/components/DashboardCalendar';
 
 const STATUS_COLORS: Record<string, string> = {
   '완료': 'bg-emerald-500',
@@ -33,10 +34,14 @@ export default async function DashboardPage() {
     created_at: string; recording_date: string; broadcast_date: string;
   }>;
 
+  const completed = products.filter(p => {
+    const effective = p.total_count - p.na_count;
+    return effective > 0 && p.done_count >= effective;
+  }).length;
   const stats = {
     total: products.length,
-    completed: products.filter(p => p.done_count === p.total_count && p.total_count > 0).length,
-    inProgress: products.filter(p => p.done_count < p.total_count && p.done_count > 0).length,
+    completed,
+    inProgress: products.length - completed,
   };
 
   return (
@@ -49,6 +54,9 @@ export default async function DashboardPage() {
             + 상품 등록
           </Link>
         </div>
+
+        {/* Calendar */}
+        <DashboardCalendar products={products} />
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
