@@ -3,12 +3,12 @@ import { getDb } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { Resend } from 'resend';
 
-const STATUS_KR: Record<string, string> = {
-  '완료': '✅ 완료',
-  '진행중': '🔄 진행중',
-  '보류': '⏸ 보류',
-  '해당없음': '➖ 해당없음',
-  '미완료': '⬜ 미완료',
+const STATUS_STYLE: Record<string, { label: string; bg: string; color: string }> = {
+  '완료':    { label: '완료',    bg: '#d1fae5', color: '#065f46' },
+  '진행중':  { label: '진행중',  bg: '#dbeafe', color: '#1e40af' },
+  '보류':    { label: '보류',    bg: '#fef3c7', color: '#92400e' },
+  '해당없음':{ label: '해당없음',bg: '#f1f5f9', color: '#64748b' },
+  '미완료':  { label: '미완료',  bg: '#f1f5f9', color: '#94a3b8' },
 };
 
 function calcDday(dateStr: string): string {
@@ -17,12 +17,32 @@ function calcDday(dateStr: string): string {
   const target = new Date(dateStr); target.setHours(0, 0, 0, 0);
   const diff = Math.round((target.getTime() - today.getTime()) / 86400000);
   if (diff === 0) return 'D-Day';
-  if (diff > 0) return `D-${diff}`;
-  return `D+${Math.abs(diff)}`;
+  return diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`;
 }
 
-function stripHtml(html: string): string {
-  return html ? html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim() : '';
+function htmlToText(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<li>/gi, '• ')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function parseEmails(raw: string): string[] {
+  if (!raw) return [];
+  return raw.split(/[,;\n]/).map(e => e.trim()).filter(e => e.includes('@'));
+}
+
+function textCell(text: string): string {
+  if (!text) return '<span style="color:#94a3b8;font-size:12px;">-</span>';
+  return `<span style="white-space:pre-wrap;font-size:13px;color:#334155;line-height:1.6;">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`;
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -38,12 +58,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     WHERE p.id = ?
   `).get(id) as {
     id: string; name: string; category_name: string; partner_name: string; md_name: string;
-    contact_email: string; product_notes: string; created_at: string;
+    contact_email: string; cc_email: string; product_notes: string; created_at: string;
     recording_date: string; broadcast_date: string;
   } | undefined;
 
   if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (!product.contact_email) return NextResponse.json({ error: '담당자 이메일이 없습니다.' }, { status: 400 });
+
+  const toList = parseEmails(product.contact_email || '');
+  if (toList.length === 0) return NextResponse.json({ error: '담당자 이메일이 없습니다.' }, { status: 400 });
+  const ccList = parseEmails(product.cc_email || '');
 
   const records = db.prepare(`
     SELECT t.item_name, t.standard, t.sort_order,
@@ -62,84 +85,117 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const effective = records.length - naCount;
   const pct = effective > 0 ? Math.round((doneCount / effective) * 100) : 0;
 
-  const recordRows = records.map(r => `
-    <tr style="border-bottom:1px solid #e2e8f0;">
-      <td style="padding:8px 12px;font-size:13px;color:#334155;">${r.item_name}</td>
-      <td style="padding:8px 12px;font-size:12px;color:#64748b;">${stripHtml(r.standard || '')}</td>
-      <td style="padding:8px 12px;font-size:12px;white-space:nowrap;">${STATUS_KR[r.status] || r.status}</td>
-      <td style="padding:8px 12px;font-size:12px;color:#334155;">${stripHtml(r.qa_notes || '')}</td>
-      <td style="padding:8px 12px;font-size:12px;color:#334155;">${stripHtml(r.standard_notes || '')}</td>
-      <td style="padding:8px 12px;font-size:12px;color:#64748b;white-space:nowrap;">${r.due_date || ''}</td>
-    </tr>
-  `).join('');
+  const pctBarWidth = pct;
+  const pctColor = pct === 100 ? '#10b981' : pct >= 50 ? '#3b82f6' : '#f59e0b';
 
-  const rdDay = product.recording_date ? `${product.recording_date} (${calcDday(product.recording_date)})` : '-';
-  const bdDay = product.broadcast_date ? `${product.broadcast_date} (${calcDday(product.broadcast_date)})` : '-';
-  const notes = stripHtml(product.product_notes || '');
+  const rdDay = product.recording_date ? `${product.recording_date}  ${calcDday(product.recording_date)}` : '-';
+  const bdDay = product.broadcast_date ? `${product.broadcast_date}  ${calcDday(product.broadcast_date)}` : '-';
+  const notes = htmlToText(product.product_notes || '');
+
+  const recordCards = records.map((r, i) => {
+    const st = STATUS_STYLE[r.status] || STATUS_STYLE['미완료'];
+    const qaNotes = htmlToText(r.qa_notes || '');
+    const stdNotes = htmlToText(r.standard_notes || '');
+    const stdText = htmlToText(r.standard || '');
+    const isNa = r.status === '해당없음';
+    return `
+    <div style="margin-bottom:12px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;${isNa ? 'opacity:0.6;' : ''}">
+      <!-- 항목 헤더 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:11px;color:#94a3b8;font-weight:600;min-width:20px;">${i + 1}</span>
+          <span style="font-size:14px;font-weight:600;color:#1e293b;">${r.item_name}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${r.due_date ? `<span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:4px;">완료예정 ${r.due_date}</span>` : ''}
+          <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:${st.bg};color:${st.color};">${st.label}</span>
+        </div>
+      </div>
+      <!-- 내용 -->
+      <div style="padding:0;">
+        ${stdText ? `
+        <div style="padding:10px 16px;border-bottom:1px solid #f1f5f9;background:#fafafa;">
+          <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">기준</div>
+          ${textCell(stdText)}
+        </div>` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr;">
+          <div style="padding:12px 16px;border-right:1px solid #f1f5f9;">
+            <div style="font-size:11px;font-weight:600;color:#94a3b8;margin-bottom:6px;">QA 확인사항</div>
+            ${textCell(qaNotes)}
+          </div>
+          <div style="padding:12px 16px;">
+            <div style="font-size:11px;font-weight:600;color:#94a3b8;margin-bottom:6px;">기준 및 QA 의견</div>
+            ${textCell(stdNotes)}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 
   const html = `
 <!DOCTYPE html>
 <html lang="ko">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <div style="max-width:800px;margin:32px auto;background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
-    <!-- Header -->
-    <div style="background:#1e40af;padding:24px 32px;">
-      <div style="font-size:12px;color:#93c5fd;margin-bottom:4px;">QA 체크 시스템</div>
-      <div style="font-size:22px;font-weight:700;color:#fff;">${product.name}</div>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,sans-serif;">
+<div style="max-width:720px;margin:28px auto;background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+
+  <!-- 헤더 -->
+  <div style="background:linear-gradient(135deg,#1e3a8a 0%,#2563eb 100%);padding:28px 32px 24px;">
+    <div style="font-size:11px;color:#93c5fd;letter-spacing:0.08em;margin-bottom:6px;">QA 체크 시스템</div>
+    <div style="font-size:22px;font-weight:700;color:#fff;line-height:1.3;">${product.name}</div>
+    <div style="font-size:12px;color:#bfdbfe;margin-top:4px;">${product.category_name}${product.partner_name ? ' · ' + product.partner_name : ''}</div>
+  </div>
+
+  <!-- 진척률 바 -->
+  <div style="padding:16px 32px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:12px;font-weight:600;color:#475569;">QA 진척률</span>
+      <span style="font-size:14px;font-weight:700;color:${pctColor};">${doneCount} / ${records.length} 항목 (${pct}%)</span>
     </div>
-    <!-- Info -->
-    <div style="padding:20px 32px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
-      <table style="border-collapse:collapse;width:100%;">
-        <tr>
-          <td style="padding:4px 16px 4px 0;font-size:12px;color:#64748b;white-space:nowrap;">카테고리</td>
-          <td style="padding:4px 0;font-size:13px;font-weight:600;color:#1e293b;">${product.category_name}</td>
-          <td style="padding:4px 16px 4px 32px;font-size:12px;color:#64748b;white-space:nowrap;">협력사</td>
-          <td style="padding:4px 0;font-size:13px;font-weight:600;color:#1e293b;">${product.partner_name || '-'}</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 16px 4px 0;font-size:12px;color:#64748b;">MD</td>
-          <td style="padding:4px 0;font-size:13px;font-weight:600;color:#1e293b;">${product.md_name || '-'}</td>
-          <td style="padding:4px 16px 4px 32px;font-size:12px;color:#64748b;">진척률</td>
-          <td style="padding:4px 0;font-size:13px;font-weight:600;color:#1e293b;">${doneCount}/${records.length} (${pct}%)</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 16px 4px 0;font-size:12px;color:#64748b;">🎬 녹화 예정</td>
-          <td style="padding:4px 0;font-size:13px;font-weight:600;color:#1e293b;">${rdDay}</td>
-          <td style="padding:4px 16px 4px 32px;font-size:12px;color:#64748b;">📺 송출 예정</td>
-          <td style="padding:4px 0;font-size:13px;font-weight:600;color:#1e293b;">${bdDay}</td>
-        </tr>
-      </table>
-    </div>
-    <!-- QA Table -->
-    <div style="padding:24px 32px;">
-      <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:12px;">QA 체크리스트</div>
-      <div style="overflow-x:auto;">
-        <table style="border-collapse:collapse;width:100%;min-width:600px;">
-          <thead>
-            <tr style="background:#f1f5f9;border-bottom:2px solid #e2e8f0;">
-              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#475569;font-weight:600;">QA항목</th>
-              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#475569;font-weight:600;">기준</th>
-              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#475569;font-weight:600;">상태</th>
-              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#475569;font-weight:600;">QA 확인사항</th>
-              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#475569;font-weight:600;">기준 및 QA 의견</th>
-              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#475569;font-weight:600;">완료예정일</th>
-            </tr>
-          </thead>
-          <tbody>${recordRows}</tbody>
-        </table>
-      </div>
-    </div>
-    ${notes ? `
-    <div style="padding:0 32px 24px;">
-      <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:8px;">상품확인정보</div>
-      <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;white-space:pre-wrap;">${notes}</div>
-    </div>` : ''}
-    <!-- Footer -->
-    <div style="padding:16px 32px;border-top:1px solid #e2e8f0;background:#f8fafc;text-align:center;">
-      <div style="font-size:11px;color:#94a3b8;">QA 체크 시스템 | 이 이메일은 자동 발송되었습니다.</div>
+    <div style="background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden;">
+      <div style="background:${pctColor};height:8px;width:${pctBarWidth}%;border-radius:99px;"></div>
     </div>
   </div>
+
+  <!-- 상품 정보 -->
+  <div style="padding:16px 32px;border-bottom:1px solid #e2e8f0;">
+    <table style="border-collapse:collapse;width:100%;">
+      <tr>
+        <td style="padding:5px 20px 5px 0;font-size:11px;color:#94a3b8;font-weight:600;white-space:nowrap;vertical-align:top;">MD</td>
+        <td style="padding:5px 32px 5px 0;font-size:13px;color:#1e293b;font-weight:500;">${product.md_name || '-'}</td>
+        <td style="padding:5px 20px 5px 0;font-size:11px;color:#94a3b8;font-weight:600;white-space:nowrap;vertical-align:top;">🎬 녹화 예정</td>
+        <td style="padding:5px 0;font-size:13px;color:#1e293b;font-weight:500;">${rdDay}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 20px 5px 0;font-size:11px;color:#94a3b8;font-weight:600;white-space:nowrap;vertical-align:top;">협력사</td>
+        <td style="padding:5px 32px 5px 0;font-size:13px;color:#1e293b;font-weight:500;">${product.partner_name || '-'}</td>
+        <td style="padding:5px 20px 5px 0;font-size:11px;color:#94a3b8;font-weight:600;white-space:nowrap;vertical-align:top;">📺 송출 예정</td>
+        <td style="padding:5px 0;font-size:13px;color:#1e293b;font-weight:500;">${bdDay}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- QA 체크리스트 -->
+  <div style="padding:24px 32px;">
+    <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #e2e8f0;">
+      QA 체크리스트
+    </div>
+    ${recordCards}
+  </div>
+
+  ${notes ? `
+  <!-- 상품확인정보 -->
+  <div style="padding:0 32px 28px;">
+    <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:12px;">상품확인정보</div>
+    <div style="font-size:13px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;white-space:pre-wrap;line-height:1.7;">${notes.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+  </div>` : ''}
+
+  <!-- 푸터 -->
+  <div style="padding:14px 32px;border-top:1px solid #e2e8f0;background:#f8fafc;text-align:center;">
+    <div style="font-size:11px;color:#94a3b8;">QA 체크 시스템 · 자동 발송 이메일입니다</div>
+  </div>
+
+</div>
 </body>
 </html>`;
 
@@ -149,17 +205,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const resend = new Resend(apiKey);
   const fromEmail = process.env.FROM_EMAIL || 'QA체크시스템 <onboarding@resend.dev>';
 
-  const { error } = await resend.emails.send({
+  const sendOpts: Parameters<typeof resend.emails.send>[0] = {
     from: fromEmail,
-    to: product.contact_email,
-    subject: `[QA 체크] ${product.name} - 진척률 ${pct}%`,
+    to: toList,
+    subject: `[QA 체크] ${product.name} — 진척률 ${pct}%`,
     html,
-  });
+  };
+  if (ccList.length > 0) sendOpts.cc = ccList;
 
+  const { error } = await resend.emails.send(sendOpts);
   if (error) {
     console.error('Resend error:', error);
     return NextResponse.json({ error: '이메일 발송에 실패했습니다.' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, to: toList, cc: ccList });
 }

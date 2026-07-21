@@ -3,15 +3,14 @@ import { useState } from 'react';
 
 interface Props {
   productId: string;
-  contactEmail: string;
+  hasEmail: boolean;
 }
 
-export default function SendEmailButton({ productId, contactEmail }: Props) {
+export default function SendEmailButton({ productId, hasEmail }: Props) {
   const [status, setStatus] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
   async function send() {
-    if (!contactEmail) return;
     setStatus('sending');
     setErrorMsg('');
     const res = await fetch(`/api/products/${productId}/send-email`, { method: 'POST' });
@@ -26,34 +25,29 @@ export default function SendEmailButton({ productId, contactEmail }: Props) {
     }
   }
 
-  if (!contactEmail) return null;
+  if (!hasEmail) return null;
 
   return (
-    <div className="relative">
-      <button
-        onClick={send}
-        disabled={status === 'sending'}
-        className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition ${
-          status === 'done'
-            ? 'bg-emerald-50 border-emerald-300 text-emerald-600'
-            : status === 'error'
-            ? 'bg-red-50 border-red-300 text-red-600'
-            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-        } disabled:opacity-60`}
-      >
-        {status === 'sending' ? (
-          <><span className="animate-spin text-xs">⟳</span> 발송 중...</>
-        ) : status === 'done' ? (
-          <>✓ 발송 완료</>
-        ) : status === 'error' ? (
-          <>✕ {errorMsg}</>
-        ) : (
-          <>✉ 이메일 발송</>
-        )}
-      </button>
-      {status === 'idle' && (
-        <div className="absolute right-0 top-full mt-1 text-xs text-slate-400 whitespace-nowrap">{contactEmail}</div>
+    <button
+      onClick={send}
+      disabled={status === 'sending'}
+      className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition ${
+        status === 'done'
+          ? 'bg-emerald-50 border-emerald-300 text-emerald-600'
+          : status === 'error'
+          ? 'bg-red-50 border-red-300 text-red-600'
+          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+      } disabled:opacity-60`}
+    >
+      {status === 'sending' ? (
+        <><span className="inline-block animate-spin">⟳</span> 발송 중...</>
+      ) : status === 'done' ? (
+        <>✓ 발송 완료</>
+      ) : status === 'error' ? (
+        <>✕ {errorMsg}</>
+      ) : (
+        <>✉ 이메일 발송</>
       )}
-    </div>
+    </button>
   );
 }

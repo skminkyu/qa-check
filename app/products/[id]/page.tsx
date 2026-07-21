@@ -19,7 +19,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; contact_email: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string } | undefined;
+  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; contact_email: string; cc_email: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string } | undefined;
 
   if (!product) notFound();
 
@@ -50,6 +50,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             initialPartnerName={product.partner_name || ''}
             initialMdName={product.md_name || ''}
             initialContactEmail={product.contact_email || ''}
+            initialCcEmail={product.cc_email || ''}
             initialRecordingDate={product.recording_date || ''}
             initialBroadcastDate={product.broadcast_date || ''}
             categoryName={product.category_name}
@@ -59,7 +60,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           {!readOnly && (
             <div className="flex flex-col items-end gap-2">
               <ShareButton productId={id} initialToken={shareToken} />
-              <SendEmailButton productId={id} contactEmail={product.contact_email || ''} />
+              <SendEmailButton productId={id} hasEmail={!!product.contact_email} />
             </div>
           )}
         </div>

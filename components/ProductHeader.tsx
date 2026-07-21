@@ -8,6 +8,7 @@ interface Props {
   initialPartnerName: string;
   initialMdName: string;
   initialContactEmail: string;
+  initialCcEmail: string;
   initialRecordingDate: string;
   initialBroadcastDate: string;
   categoryName: string;
@@ -30,12 +31,18 @@ function DdayBadge({ date, label }: { date: string; label: string }) {
   );
 }
 
-export default function ProductHeader({ productId, initialName, initialPartnerName, initialMdName, initialContactEmail, initialRecordingDate, initialBroadcastDate, categoryName, createdAt, readOnly }: Props) {
+export default function ProductHeader({
+  productId, initialName, initialPartnerName, initialMdName,
+  initialContactEmail, initialCcEmail,
+  initialRecordingDate, initialBroadcastDate,
+  categoryName, createdAt, readOnly,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(initialName);
   const [partnerName, setPartnerName] = useState(initialPartnerName);
   const [mdName, setMdName] = useState(initialMdName);
   const [contactEmail, setContactEmail] = useState(initialContactEmail);
+  const [ccEmail, setCcEmail] = useState(initialCcEmail);
   const [recordingDate, setRecordingDate] = useState(initialRecordingDate);
   const [broadcastDate, setBroadcastDate] = useState(initialBroadcastDate);
   const [saving, setSaving] = useState(false);
@@ -45,7 +52,13 @@ export default function ProductHeader({ productId, initialName, initialPartnerNa
     await fetch(`/api/products/${productId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, partnerName, mdName, contactEmail: contactEmail || null, recordingDate: recordingDate || null, broadcastDate: broadcastDate || null }),
+      body: JSON.stringify({
+        name, partnerName, mdName,
+        contactEmail: contactEmail || null,
+        ccEmail: ccEmail || null,
+        recordingDate: recordingDate || null,
+        broadcastDate: broadcastDate || null,
+      }),
     });
     setSaving(false);
     setEditing(false);
@@ -53,10 +66,13 @@ export default function ProductHeader({ productId, initialName, initialPartnerNa
 
   function cancel() {
     setName(initialName); setPartnerName(initialPartnerName); setMdName(initialMdName);
-    setContactEmail(initialContactEmail);
+    setContactEmail(initialContactEmail); setCcEmail(initialCcEmail);
     setRecordingDate(initialRecordingDate); setBroadcastDate(initialBroadcastDate);
     setEditing(false);
   }
+
+  const toEmails = contactEmail.split(/[,;\n]/).map(e => e.trim()).filter(e => e.includes('@'));
+  const ccEmails = ccEmail.split(/[,;\n]/).map(e => e.trim()).filter(e => e.includes('@'));
 
   return (
     <div>
@@ -86,11 +102,6 @@ export default function ProductHeader({ productId, initialName, initialPartnerNa
                 className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 w-32" placeholder="MD 이름" />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm text-slate-500 shrink-0">담당자 이메일:</span>
-              <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)}
-                className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 w-52" placeholder="example@company.com" />
-            </div>
-            <div className="flex items-center gap-1.5">
               <span className="text-sm text-slate-500 shrink-0">녹화 예정일:</span>
               <input type="date" value={recordingDate} onChange={e => setRecordingDate(e.target.value)}
                 className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400" />
@@ -99,6 +110,30 @@ export default function ProductHeader({ productId, initialName, initialPartnerNa
               <span className="text-sm text-slate-500 shrink-0">송출 예정일:</span>
               <input type="date" value={broadcastDate} onChange={e => setBroadcastDate(e.target.value)}
                 className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+            </div>
+          </div>
+          {/* 이메일 입력 */}
+          <div className="flex flex-col gap-2 max-w-xl bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <div className="text-xs font-semibold text-slate-500 mb-1">이메일 발송 설정</div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-500">수신 (To) — 여러 명은 쉼표로 구분</label>
+              <textarea
+                value={contactEmail}
+                onChange={e => setContactEmail(e.target.value)}
+                rows={2}
+                className="text-sm border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
+                placeholder="a@company.com, b@company.com"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-slate-500">참조 (CC) — 여러 명은 쉼표로 구분</label>
+              <textarea
+                value={ccEmail}
+                onChange={e => setCcEmail(e.target.value)}
+                rows={2}
+                className="text-sm border border-slate-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
+                placeholder="c@company.com, d@company.com"
+              />
             </div>
           </div>
           <div className="flex gap-2">
@@ -120,7 +155,22 @@ export default function ProductHeader({ productId, initialName, initialPartnerNa
               <span>카테고리: <strong className="text-slate-700">{categoryName}</strong></span>
               {partnerName && <span>협력사: <strong className="text-slate-700">{partnerName}</strong></span>}
               {mdName && <span>MD: <strong className="text-slate-700">{mdName}</strong></span>}
-              {contactEmail && <span>담당자: <a href={`mailto:${contactEmail}`} className="text-blue-600 hover:underline font-medium">{contactEmail}</a></span>}
+              {toEmails.length > 0 && (
+                <span className="flex items-center gap-1 flex-wrap">
+                  <span className="text-slate-400">수신:</span>
+                  {toEmails.map(e => (
+                    <a key={e} href={`mailto:${e}`} className="text-blue-600 hover:underline font-medium">{e}</a>
+                  ))}
+                </span>
+              )}
+              {ccEmails.length > 0 && (
+                <span className="flex items-center gap-1 flex-wrap">
+                  <span className="text-slate-400">참조:</span>
+                  {ccEmails.map(e => (
+                    <a key={e} href={`mailto:${e}`} className="text-slate-500 hover:underline">{e}</a>
+                  ))}
+                </span>
+              )}
               <span>등록일: {createdAt.slice(0, 10)}</span>
               {recordingDate && (
                 <span className="flex items-center gap-1">

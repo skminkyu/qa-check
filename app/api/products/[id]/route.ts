@@ -27,13 +27,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await getSession();
   if (!session || session.role === 'viewer') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await params;
-  const { name, partnerName, mdName, productNotes, recordingDate, broadcastDate, contactEmail } = await req.json();
+  const { name, partnerName, mdName, productNotes, recordingDate, broadcastDate, contactEmail, ccEmail } = await req.json();
   const db = getDb();
   if (productNotes !== undefined) {
     db.prepare('UPDATE products SET product_notes=?, updated_at=datetime(\'now\') WHERE id=?').run(productNotes, id);
   }
   if (name !== undefined) {
-    db.prepare('UPDATE products SET name=?, partner_name=?, md_name=?, contact_email=?, updated_at=datetime(\'now\') WHERE id=?').run(name, partnerName, mdName, contactEmail ?? null, id);
+    db.prepare('UPDATE products SET name=?, partner_name=?, md_name=?, contact_email=?, cc_email=?, updated_at=datetime(\'now\') WHERE id=?').run(name, partnerName, mdName, contactEmail ?? null, ccEmail ?? null, id);
   }
   if (recordingDate !== undefined || broadcastDate !== undefined) {
     db.prepare('UPDATE products SET recording_date=?, broadcast_date=?, updated_at=datetime(\'now\') WHERE id=?').run(recordingDate ?? null, broadcastDate ?? null, id);
