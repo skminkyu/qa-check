@@ -7,6 +7,7 @@ import ShareButton from '@/components/ShareButton';
 import ProductNotes from '@/components/ProductNotes';
 import ProductHeader from '@/components/ProductHeader';
 import SendEmailButton from '@/components/SendEmailButton';
+import CaptureImageButton from '@/components/CaptureImageButton';
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -57,27 +58,26 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             createdAt={product.created_at}
             readOnly={readOnly}
           />
-          {!readOnly && (
-            <div className="flex flex-col items-end gap-2">
-              <ShareButton productId={id} initialToken={shareToken} />
-              <SendEmailButton productId={id} hasEmail={!!product.contact_email} />
-            </div>
-          )}
+          <div className="flex flex-col items-end gap-2">
+            {!readOnly && <ShareButton productId={id} initialToken={shareToken} />}
+            {!readOnly && <SendEmailButton productId={id} hasEmail={!!product.contact_email} />}
+            <CaptureImageButton targetId="qa-capture-area" filename={product.name} />
+          </div>
         </div>
 
-        {/* QA 체크리스트 */}
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
-          <QATable productId={id} initialRecords={records} readOnly={readOnly} />
-        </div>
-
-        {/* 상품확인정보 */}
-        <div>
+        {/* QA 체크리스트 + 상품확인정보 (캡처 영역) */}
+        <div id="qa-capture-area">
+          <div className="mb-6">
+            <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
+            <QATable productId={id} initialRecords={records} readOnly={readOnly} />
+          </div>
+          <div>
           <ProductNotes
             productId={id}
             initialNotes={product.product_notes || ''}
             readOnly={readOnly}
           />
+          </div>
         </div>
       </main>
     </div>

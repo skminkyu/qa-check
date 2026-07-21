@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getDb } from '@/lib/db';
 import QATable from '@/components/QATable';
 import ProductNotes from '@/components/ProductNotes';
+import CaptureImageButton from '@/components/CaptureImageButton';
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -40,12 +41,15 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
         <span className="font-bold text-slate-800">QA 체크 시스템</span>
-        <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full">읽기 전용</span>
+        <div className="flex items-center gap-3">
+          <CaptureImageButton targetId="qa-capture-area" filename={product.name} />
+          <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full">읽기 전용</span>
+        </div>
       </div>
       <main className="w-full px-4 py-8">
-        <div className="mb-6">
+        <div id="qa-capture-area">
           <h1 className="text-2xl font-bold text-slate-800 mb-2">{product.name}</h1>
-          <div className="flex flex-wrap gap-4 text-sm text-slate-500 items-center">
+          <div className="flex flex-wrap gap-4 text-sm text-slate-500 items-center mb-6">
             <span>카테고리: <strong className="text-slate-700">{product.category_name}</strong></span>
             {product.partner_name && <span>협력사: <strong className="text-slate-700">{product.partner_name}</strong></span>}
             {product.md_name && <span>MD: <strong className="text-slate-700">{product.md_name}</strong></span>}
@@ -78,12 +82,10 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
               );
             })()}
           </div>
-        </div>
-        <div className="mb-6">
-          <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
-          <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
-        </div>
-        <div>
+          <div className="mb-6">
+            <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
+            <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
+          </div>
           <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
         </div>
       </main>

@@ -20,6 +20,7 @@
     "@tiptap/starter-kit": "^3.24.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.10.0",
+    "html2canvas": "^1.4.1",
     "jose": "^6.2.3",
     "next": "16.2.6",
     "react": "19.2.4",
