@@ -18,7 +18,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string } | undefined;
+  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string } | undefined;
 
   if (!product) notFound();
 
@@ -48,6 +48,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             initialName={product.name}
             initialPartnerName={product.partner_name || ''}
             initialMdName={product.md_name || ''}
+            initialRecordingDate={product.recording_date || ''}
+            initialBroadcastDate={product.broadcast_date || ''}
             categoryName={product.category_name}
             createdAt={product.created_at}
             readOnly={readOnly}

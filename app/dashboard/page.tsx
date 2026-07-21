@@ -30,7 +30,7 @@ export default async function DashboardPage() {
   `).all() as Array<{
     id: string; name: string; category_name: string; partner_name: string; md_name: string;
     done_count: number; progress_count: number; hold_count: number; na_count: number; total_count: number;
-    created_at: string;
+    created_at: string; recording_date: string; broadcast_date: string;
   }>;
 
   const stats = {
