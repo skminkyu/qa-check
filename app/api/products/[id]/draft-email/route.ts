@@ -215,13 +215,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const ccHeader = ccList.length > 0 ? ccList.join(', ') : '';
   const htmlB64 = Buffer.from(htmlBody, 'utf-8').toString('base64').match(/.{1,76}/g)?.join('\r\n') || '';
 
-  const eml = [
+  // Build headers without any blank lines between them
+  const headers: string[] = [
     'MIME-Version: 1.0',
     `Subject: ${subjectEncoded}`,
-    toHeader ? `To: ${toHeader}` : '',
-    ccHeader ? `Cc: ${ccHeader}` : '',
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    '',
+  ];
+  if (toHeader) headers.push(`To: ${toHeader}`);
+  if (ccHeader) headers.push(`Cc: ${ccHeader}`);
+  headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
+
+  const eml = [
+    ...headers,
+    '',  // single blank line separating headers from body (RFC 2822)
     `--${boundary}`,
     'Content-Type: text/html; charset=UTF-8',
     'Content-Transfer-Encoding: base64',
@@ -229,8 +234,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     htmlB64,
     '',
     `--${boundary}--`,
-  ].filter(line => line !== undefined && !(line.startsWith('To:') && !toHeader) && !(line.startsWith('Cc:') && !ccHeader))
-   .join('\r\n');
+  ].join('\r\n');
 
   const filename = `QA_${product.name.replace(/[^\w가-힣]/g, '_')}.eml`;
 
