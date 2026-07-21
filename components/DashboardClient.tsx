@@ -60,7 +60,12 @@ export default function DashboardClient({ products }: Props) {
         }, null as number | null);
         return { ...p, rdiff: rd, bdiff: bd, minDiff };
       })
-      .filter(p => p.minDiff !== null && p.minDiff <= 3)
+      .filter(p => {
+        if (p.minDiff === null || p.minDiff > 3) return false;
+        const effective = p.total_count - p.na_count;
+        const completed = effective > 0 && p.done_count >= effective;
+        return !completed;
+      })
       .sort((a, b) => (a.minDiff ?? 999) - (b.minDiff ?? 999));
   }, [products]);
 
