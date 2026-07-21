@@ -81,6 +81,7 @@ function initSchema(db: Database.Database) {
   try { db.exec('ALTER TABLE qa_records ADD COLUMN due_date TEXT'); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN recording_date TEXT'); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN broadcast_date TEXT'); } catch {}
+  try { db.exec('ALTER TABLE products ADD COLUMN contact_email TEXT'); } catch {}
   db.exec(`UPDATE qa_templates SET file_url = '/attachments/원산지확약서.docx' WHERE item_name LIKE '%원산지 확약서%' AND (file_url IS NULL OR file_url = '')`);
 
   seedDefaults(db);
