@@ -61,7 +61,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <div className="flex flex-col items-end gap-2">
             {!readOnly && <ShareButton productId={id} initialToken={shareToken} />}
             {!readOnly && <SendEmailButton productId={id} hasEmail={!!product.contact_email} />}
-            <CaptureImageButton targetId="qa-capture-area" filename={product.name} />
+            <CaptureImageButton targetId="qa-capture-area" filename={product.name} productId={id} />
           </div>
         </div>
 

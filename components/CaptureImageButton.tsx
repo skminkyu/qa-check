@@ -2,11 +2,12 @@
 import { useState, useRef } from 'react';
 
 interface Props {
-  targetId: string;   // id of the element to capture
+  targetId: string;
   filename?: string;
+  productId?: string;  // if provided, use server-side screenshot
 }
 
-export default function CaptureImageButton({ targetId, filename = 'QA_체크리스트' }: Props) {
+export default function CaptureImageButton({ targetId, filename = 'QA_체크리스트', productId }: Props) {
   const [status, setStatus] = useState<'idle' | 'capturing' | 'done' | 'error'>('idle');
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -15,40 +16,51 @@ export default function CaptureImageButton({ targetId, filename = 'QA_체크리�
     setShowMenu(false);
     setStatus('capturing');
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const el = document.getElementById(targetId);
-      if (!el) throw new Error('element not found');
+      let blob: Blob;
 
-      const canvas = await html2canvas(el, {
-        useCORS: true,
-        allowTaint: true,
-        scale: 2,           // 2x for high-DPI / clarity
-        backgroundColor: '#f8fafc',
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: el.scrollWidth,
-        width: el.scrollWidth,
-        height: el.scrollHeight,
-        logging: false,
-      });
+      if (productId) {
+        // Server-side Playwright screenshot
+        const res = await fetch(`/api/products/${productId}/screenshot`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(err.error || res.statusText);
+        }
+        blob = await res.blob();
+      } else {
+        // Client-side html2canvas fallback (for share pages)
+        const html2canvas = (await import('html2canvas')).default;
+        const el = document.getElementById(targetId);
+        if (!el) throw new Error('element not found');
+        const canvas = await html2canvas(el, {
+          useCORS: true,
+          allowTaint: true,
+          scale: 2,
+          backgroundColor: '#f8fafc',
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: el.scrollWidth,
+          width: el.scrollWidth,
+          height: el.scrollHeight,
+          logging: false,
+        });
+        blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('blob error')), 'image/png');
+        });
+      }
 
       if (action === 'download') {
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = `${filename}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.href = url;
         link.click();
-        setStatus('done');
-        setTimeout(() => setStatus('idle'), 2500);
+        URL.revokeObjectURL(url);
       } else {
-        canvas.toBlob(async (blob) => {
-          if (!blob) throw new Error('blob error');
-          await navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob }),
-          ]);
-          setStatus('done');
-          setTimeout(() => setStatus('idle'), 2500);
-        }, 'image/png');
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       }
+
+      setStatus('done');
+      setTimeout(() => setStatus('idle'), 2500);
     } catch (e) {
       console.error(e);
       setStatus('error');
