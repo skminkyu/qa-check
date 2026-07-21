@@ -14,9 +14,16 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string } | undefined;
+  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string } | undefined;
 
   if (!product) notFound();
+
+  function calcDday(dateStr: string): number | null {
+    if (!dateStr) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr); target.setHours(0, 0, 0, 0);
+    return Math.round((target.getTime() - today.getTime()) / 86400000);
+  }
 
   const records = db.prepare(`
     SELECT t.id as template_id, t.item_name, t.standard, t.file_url, t.sort_order,
@@ -38,10 +45,38 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
       <main className="w-full px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-800 mb-2">{product.name}</h1>
-          <div className="flex gap-4 text-sm text-slate-500">
+          <div className="flex flex-wrap gap-4 text-sm text-slate-500 items-center">
             <span>카테고리: <strong className="text-slate-700">{product.category_name}</strong></span>
             {product.partner_name && <span>협력사: <strong className="text-slate-700">{product.partner_name}</strong></span>}
             {product.md_name && <span>MD: <strong className="text-slate-700">{product.md_name}</strong></span>}
+            {product.recording_date && (() => {
+              const diff = calcDday(product.recording_date);
+              const urgent = diff !== null && diff >= 0 && diff <= 3;
+              const past = diff !== null && diff < 0;
+              const label = diff === 0 ? 'D-Day' : diff !== null && diff > 0 ? `D-${diff}` : diff !== null ? `D+${Math.abs(diff)}` : '';
+              return (
+                <span className="flex items-center gap-1.5">
+                  <span>🎬 녹화: <strong className="text-slate-700">{product.recording_date}</strong></span>
+                  <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${past ? 'bg-gray-100 text-gray-400' : urgent ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-blue-50 text-blue-600'}`}>
+                    {urgent && '🔴 '}{label}
+                  </span>
+                </span>
+              );
+            })()}
+            {product.broadcast_date && (() => {
+              const diff = calcDday(product.broadcast_date);
+              const urgent = diff !== null && diff >= 0 && diff <= 3;
+              const past = diff !== null && diff < 0;
+              const label = diff === 0 ? 'D-Day' : diff !== null && diff > 0 ? `D-${diff}` : diff !== null ? `D+${Math.abs(diff)}` : '';
+              return (
+                <span className="flex items-center gap-1.5">
+                  <span>📺 송출: <strong className="text-slate-700">{product.broadcast_date}</strong></span>
+                  <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${past ? 'bg-gray-100 text-gray-400' : urgent ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-blue-50 text-blue-600'}`}>
+                    {urgent && '🔴 '}{label}
+                  </span>
+                </span>
+              );
+            })()}
           </div>
         </div>
         <div className="mb-6">
