@@ -39,6 +39,9 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
   const [records, setRecords] = useState<QARecord[]>(
     initialRecords.map(r => ({ ...r, status: r.status || '미완료' }))
   );
+  const recordsRef = useRef<QARecord[]>([]);
+  recordsRef.current = records;
+
   const [saving, setSaving] = useState<string | null>(null);
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
   const [dueDateSort, setDueDateSort] = useState<'asc' | 'desc' | null>(null);
@@ -55,9 +58,11 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const save = useCallback(async (record: QARecord) => {
+  const save = useCallback(async (templateId: string) => {
     if (readOnly) return;
-    setSaving(record.template_id);
+    const record = recordsRef.current.find(r => r.template_id === templateId);
+    if (!record) return;
+    setSaving(templateId);
     const res = await fetch('/api/qa-records', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -72,7 +77,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
     });
     if (res.ok) {
       const now = new Date().toISOString().slice(0, 16).replace('T', ' ');
-      setRecords(prev => prev.map(r => r.template_id === record.template_id ? { ...r, updated_at: now } : r));
+      setRecords(prev => prev.map(r => r.template_id === templateId ? { ...r, updated_at: now } : r));
     }
     setSaving(null);
   }, [productId, readOnly]);
@@ -234,7 +239,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                       onChange={e => {
                         const updated = { ...r, status: e.target.value };
                         updateRecord(r.template_id, { status: e.target.value });
-                        save(updated);
+                        save(updated.template_id);
                       }}
                       className={`text-xs font-medium px-1.5 py-1 rounded-lg border focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer w-full ${STATUS_STYLE[r.status || '미완료']}`}
                     >
@@ -252,7 +257,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                       type="date"
                       value={r.due_date || ''}
                       onChange={e => updateRecord(r.template_id, { due_date: e.target.value })}
-                      onBlur={() => save(r)}
+                      onBlur={() => save(r.template_id)}
                       className="text-xs border border-slate-200 rounded px-1.5 py-1 w-full focus:outline-none focus:ring-1 focus:ring-blue-300 text-slate-700 bg-transparent"
                     />
                   )}
@@ -263,7 +268,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                   <InlineEditor
                     value={r.qa_notes || ''}
                     onChange={v => updateRecord(r.template_id, { qa_notes: v })}
-                    onBlur={() => save(r)}
+                    onBlur={() => save(r.template_id)}
                     placeholder="확인 내용 입력..."
                     readOnly={readOnly}
                     rows={3}
@@ -283,7 +288,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                   <InlineEditor
                     value={r.standard_notes || ''}
                     onChange={v => updateRecord(r.template_id, { standard_notes: v })}
-                    onBlur={() => save(r)}
+                    onBlur={() => save(r.template_id)}
                     placeholder="기준/의견 입력..."
                     readOnly={readOnly}
                     rows={3}
