@@ -91,7 +91,7 @@ export default function InlineEditor({ value, onChange, onBlur, placeholder, rea
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ link: false }),
+      StarterKit.configure({ link: false, underline: false }),
       Image.configure({ inline: false, allowBase64: true }),
       Link.configure({ openOnClick: readOnly, autolink: true }),
       TextStyle,
