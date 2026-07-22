@@ -58,10 +58,11 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const save = useCallback(async (templateId: string) => {
+  const save = useCallback(async (templateId: string, overrides?: Partial<QARecord>) => {
     if (readOnly) return;
-    const record = recordsRef.current.find(r => r.template_id === templateId);
-    if (!record) return;
+    const base = recordsRef.current.find(r => r.template_id === templateId);
+    if (!base) return;
+    const record = overrides ? { ...base, ...overrides } : base;
     setSaving(templateId);
     const res = await fetch('/api/qa-records', {
       method: 'PUT',
@@ -237,9 +238,9 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                     <select
                       value={r.status || '미완료'}
                       onChange={e => {
-                        const updated = { ...r, status: e.target.value };
-                        updateRecord(r.template_id, { status: e.target.value });
-                        save(updated.template_id);
+                        const newStatus = e.target.value;
+                        updateRecord(r.template_id, { status: newStatus });
+                        save(r.template_id, { status: newStatus });
                       }}
                       className={`text-xs font-medium px-1.5 py-1 rounded-lg border focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer w-full ${STATUS_STYLE[r.status || '미완료']}`}
                     >
