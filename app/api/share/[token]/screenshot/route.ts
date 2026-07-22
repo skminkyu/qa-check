@@ -17,8 +17,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   const shareRow = db.prepare('SELECT product_id FROM share_tokens WHERE token = ?').get(token) as { product_id: string } | undefined;
   if (!shareRow) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const baseUrl = req.nextUrl.origin;
-  const url = `${baseUrl}/share/${token}`;
+  const port = process.env.PORT || '3000';
+  const url = `http://localhost:${port}/share/${token}`;
 
   try {
     const { chromium } = await import('playwright-core');
