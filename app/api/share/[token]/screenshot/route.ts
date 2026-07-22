@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
     const buf = await el.screenshot({ type: 'png' });
     await browser.close();
 
-    return new NextResponse(buf, {
+    return new NextResponse(buf as unknown as BodyInit, {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': 'no-store',
