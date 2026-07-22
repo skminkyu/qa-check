@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
   if (!shareRow) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const port = process.env.PORT || '3000';
-  const url = `http://localhost:${port}/share/${token}`;
+  const url = `http://localhost:${port}/share/${token}?t=${Date.now()}`;
 
   try {
     const { chromium } = await import('playwright-core');
