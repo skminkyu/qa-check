@@ -65,20 +65,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {/* QA 체크리스트 + 상품확인정보 (캡처 영역) */}
-        <div id="qa-capture-area">
-          <div className="mb-6">
-            <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
-            <QATable productId={id} initialRecords={records} readOnly={readOnly} />
-          </div>
-          <div>
-          <ProductNotes
-            productId={id}
-            initialNotes={product.product_notes || ''}
-            readOnly={readOnly}
-          />
-          </div>
+        {/* QA 체크리스트 (캡처 영역) */}
+        <div id="qa-capture-area" className="mb-6">
+          <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
+          <QATable productId={id} initialRecords={records} readOnly={readOnly} />
         </div>
+        <ProductNotes
+          productId={id}
+          initialNotes={product.product_notes || ''}
+          readOnly={readOnly}
+        />
       </main>
     </div>
   );

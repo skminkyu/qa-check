@@ -47,7 +47,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
         </div>
       </div>
       <main className="w-full px-4 py-8">
-        <div id="qa-capture-area">
+        <div>
           <h1 className="text-2xl font-bold text-slate-800 mb-2">{product.name}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-slate-500 items-center mb-6">
             <span>카테고리: <strong className="text-slate-700">{product.category_name}</strong></span>
@@ -82,7 +82,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
               );
             })()}
           </div>
-          <div className="mb-6">
+          <div id="qa-capture-area" className="mb-6">
             <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
             <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
           </div>
