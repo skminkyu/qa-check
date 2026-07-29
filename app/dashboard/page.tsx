@@ -47,29 +47,31 @@ export default async function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <NavBar user={session} />
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
+      <main className="w-full px-8 py-8 max-w-screen-2xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-slate-800">대시보드</h1>
           <Link href="/products/new" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
             + 상품 등록
           </Link>
         </div>
 
-        {/* Calendar */}
-        <DashboardCalendar products={products} />
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {[
-            { label: '전체 상품', value: stats.total, color: 'bg-slate-700' },
-            { label: 'QA 완료', value: stats.completed, color: 'bg-emerald-600' },
-            { label: '진행 중', value: stats.inProgress, color: 'bg-blue-600' },
-          ].map(s => (
-            <div key={s.label} className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
-              <div className="text-sm text-slate-500 mb-1">{s.label}</div>
-              <div className={`text-3xl font-bold text-slate-800`}>{s.value}</div>
-            </div>
-          ))}
+        {/* Calendar + Stats side by side */}
+        <div className="flex gap-6 mb-8 items-start">
+          <div className="flex-1 min-w-0">
+            <DashboardCalendar products={products} />
+          </div>
+          <div className="flex flex-col gap-4 w-56 shrink-0">
+            {[
+              { label: '전체 상품', value: stats.total, accent: 'border-l-slate-500' },
+              { label: 'QA 완료', value: stats.completed, accent: 'border-l-emerald-500' },
+              { label: '진행 중', value: stats.inProgress, accent: 'border-l-blue-500' },
+            ].map(s => (
+              <div key={s.label} className={`bg-white rounded-xl p-5 shadow-sm border border-slate-100 border-l-4 ${s.accent}`}>
+                <div className="text-sm text-slate-500 mb-1">{s.label}</div>
+                <div className="text-4xl font-bold text-slate-800">{s.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Product list with filters */}

@@ -133,7 +133,7 @@ export default function DashboardCalendar({ products }: { products: Product[] })
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 mb-8 flex gap-6 items-stretch relative">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 flex gap-6 items-stretch relative w-full">
       {/* 오늘 날짜 (좌측) */}
       <div className="flex flex-col items-center justify-center min-w-[130px] bg-blue-600 text-white rounded-xl p-5">
         <div className="text-sm font-medium opacity-80 mb-1">{DAY_NAMES[today.getDay()]}</div>
