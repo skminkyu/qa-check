@@ -84,6 +84,7 @@ function initSchema(db: Database.Database) {
   try { db.exec('ALTER TABLE products ADD COLUMN contact_email TEXT'); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN cc_email TEXT'); } catch {}
   db.exec(`UPDATE qa_templates SET file_url = '/attachments/원산지확약서.docx' WHERE item_name LIKE '%원산지 확약서%' AND (file_url IS NULL OR file_url = '')`);
+  db.exec(`UPDATE qa_templates SET file_url = 'https://chemp.mcee.go.kr/SynapDocViewServer/viewer/doc.html?key=30760108f9364478a4f39cf851e462a9&convType=img&convLocale=ko_KR&contextPath=/SynapDocViewServer' WHERE item_name LIKE '%함유금지물질 성적서%' AND (file_url IS NULL OR file_url = '')`);
 
   seedDefaults(db);
 }
