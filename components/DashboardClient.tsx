@@ -34,16 +34,32 @@ export default function DashboardClient({ products }: Props) {
   const [filterPartner, setFilterPartner] = useState('');
   const [filterMd, setFilterMd] = useState('');
   const [alertDismissed, setAlertDismissed] = useState(false);
+  const [sortByProgress, setSortByProgress] = useState(false);
 
   const categories = useMemo(() => Array.from(new Set(products.map(p => p.category_name))).sort(), [products]);
   const partners = useMemo(() => Array.from(new Set(products.map(p => p.partner_name).filter(Boolean))).sort(), [products]);
   const mds = useMemo(() => Array.from(new Set(products.map(p => p.md_name).filter(Boolean))).sort(), [products]);
 
-  const filtered = useMemo(() => products.filter(p =>
-    (!filterCategory || p.category_name === filterCategory) &&
-    (!filterPartner || p.partner_name === filterPartner) &&
-    (!filterMd || p.md_name === filterMd)
-  ), [products, filterCategory, filterPartner, filterMd]);
+  const filtered = useMemo(() => {
+    let list = products.filter(p =>
+      (!filterCategory || p.category_name === filterCategory) &&
+      (!filterPartner || p.partner_name === filterPartner) &&
+      (!filterMd || p.md_name === filterMd)
+    );
+    if (sortByProgress) {
+      list = list
+        .filter(p => {
+          const effective = p.total_count - p.na_count;
+          return !(effective > 0 && p.done_count >= effective);
+        })
+        .sort((a, b) => {
+          const pctA = (a.total_count - a.na_count) > 0 ? a.done_count / (a.total_count - a.na_count) : 0;
+          const pctB = (b.total_count - b.na_count) > 0 ? b.done_count / (b.total_count - b.na_count) : 0;
+          return pctB - pctA;
+        });
+    }
+    return list;
+  }, [products, filterCategory, filterPartner, filterMd, sortByProgress]);
 
   const isFiltered = filterCategory || filterPartner || filterMd;
 
@@ -115,11 +131,17 @@ export default function DashboardClient({ products }: Props) {
           <option value="">MD 전체</option>
           {mds.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
-        {isFiltered && (
+        <button
+          onClick={() => setSortByProgress(v => !v)}
+          className={`text-sm border rounded-lg px-3 py-1.5 transition ${sortByProgress ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+        >
+          {sortByProgress ? '✓ 진척률 순 (100% 제외)' : '진척률 순 정렬'}
+        </button>
+        {(isFiltered || sortByProgress) && (
           <>
-            <button onClick={() => { setFilterCategory(''); setFilterPartner(''); setFilterMd(''); }}
+            <button onClick={() => { setFilterCategory(''); setFilterPartner(''); setFilterMd(''); setSortByProgress(false); }}
               className="text-sm text-slate-500 hover:text-red-500 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 transition">
-              필터 초기화
+              초기화
             </button>
             <span className="text-xs text-slate-400">{filtered.length}개 표시 중</span>
           </>
