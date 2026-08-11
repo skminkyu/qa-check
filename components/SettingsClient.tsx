@@ -76,6 +76,18 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
     flash('삭제됨');
   }
 
+  async function moveItem(id: string, direction: 'up' | 'down') {
+    const sorted = [...templates.filter(t => t.category_id === selectedCat)].sort((a, b) => a.sort_order - b.sort_order);
+    const idx = sorted.findIndex(t => t.id === id);
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === sorted.length - 1) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    [sorted[idx], sorted[swapIdx]] = [sorted[swapIdx], sorted[idx]];
+    const updates = sorted.map((t, i) => ({ ...t, sort_order: i }));
+    await Promise.all(updates.map(t => fetch(`/api/templates/${t.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sortOrder: t.sort_order }) })));
+    setTemplates(prev => prev.map(t => { const u = updates.find(x => x.id === t.id); return u ?? t; }));
+  }
+
   async function addUser() {
     const res = await fetch('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newUser) });
     const data = await res.json();
@@ -170,6 +182,10 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
                       >
                         {t.standard ? '기준 ✓' : '+ 기준'}
                       </button>
+                      <div className="flex flex-col gap-0.5 shrink-0">
+                        <button onClick={() => moveItem(t.id, 'up')} className="text-slate-300 hover:text-slate-600 text-xs leading-none transition" title="위로">▲</button>
+                        <button onClick={() => moveItem(t.id, 'down')} className="text-slate-300 hover:text-slate-600 text-xs leading-none transition" title="아래로">▼</button>
+                      </div>
                       <button onClick={() => deleteItem(t.id)} className="text-slate-300 hover:text-red-400 text-xs transition shrink-0">✕</button>
                     </div>
 

@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await getSession();
   if (!session || session.role === 'viewer') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await params;
-  const { name, partnerName, mdName, productNotes, recordingDate, broadcastDate, contactEmail, ccEmail } = await req.json();
+  const { name, partnerName, mdName, productNotes, recordingDate, broadcastDate, contactEmail, ccEmail, groupId } = await req.json();
   const db = getDb();
   if (productNotes !== undefined) {
     db.prepare('UPDATE products SET product_notes=?, updated_at=datetime(\'now\') WHERE id=?').run(productNotes, id);
@@ -37,6 +37,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (recordingDate !== undefined || broadcastDate !== undefined) {
     db.prepare('UPDATE products SET recording_date=?, broadcast_date=?, updated_at=datetime(\'now\') WHERE id=?').run(recordingDate ?? null, broadcastDate ?? null, id);
+  }
+  if (groupId !== undefined) {
+    db.prepare('UPDATE products SET group_id=? WHERE id=?').run(groupId || null, id);
   }
   return NextResponse.json({ ok: true });
 }

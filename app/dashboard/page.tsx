@@ -21,18 +21,24 @@ export default async function DashboardPage() {
   const db = getDb();
   const products = db.prepare(`
     SELECT p.*, c.name as category_name,
+      pg.id as group_id, pg.name as group_name,
       (SELECT COUNT(*) FROM qa_records r WHERE r.product_id = p.id AND r.status = '완료') as done_count,
       (SELECT COUNT(*) FROM qa_records r WHERE r.product_id = p.id AND r.status = '진행중') as progress_count,
       (SELECT COUNT(*) FROM qa_records r WHERE r.product_id = p.id AND r.status = '보류') as hold_count,
       (SELECT COUNT(*) FROM qa_records r WHERE r.product_id = p.id AND r.status = '해당없음') as na_count,
       (SELECT COUNT(*) FROM qa_templates t WHERE t.category_id = p.category_id) as total_count
-    FROM products p JOIN categories c ON c.id = p.category_id
+    FROM products p
+    JOIN categories c ON c.id = p.category_id
+    LEFT JOIN product_groups pg ON pg.id = p.group_id
     ORDER BY p.created_at DESC
   `).all() as Array<{
     id: string; name: string; category_name: string; partner_name: string; md_name: string;
+    group_id: string | null; group_name: string | null;
     done_count: number; progress_count: number; hold_count: number; na_count: number; total_count: number;
     created_at: string; recording_date: string; broadcast_date: string;
   }>;
+
+  const groups = db.prepare('SELECT * FROM product_groups ORDER BY created_at').all() as Array<{ id: string; name: string }>;
 
   const completed = products.filter(p => {
     const effective = p.total_count - p.na_count;
@@ -75,7 +81,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Product list with filters */}
-        <DashboardClient products={products} />
+        <DashboardClient products={products} groups={groups} />
       </main>
     </div>
   );
