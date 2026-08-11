@@ -212,7 +212,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
 
   async function copyGroupShare(groupId: string) {
     const res = await fetch(`/api/product-groups/${groupId}/share`, { method: 'POST' });
-    if (!res.ok) { alert('링크 생성에 실패했습니다.'); return; }
+    if (!res.ok) { const err = await res.json().catch(() => ({})); alert('링크 생성 실패: ' + (err.error || res.status)); return; }
     const { token } = await res.json();
     const url = `${window.location.origin}/share/group/${token}`;
     setGroups(g => g.map(x => x.id === groupId ? { ...x, share_token: token } : x));
