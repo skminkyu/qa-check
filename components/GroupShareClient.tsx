@@ -87,9 +87,9 @@ export default function GroupShareClient({ products, allRecords, groupName }: Pr
         </div>
         <div className="mb-6">
           <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
-          <QATable productId={product.id} initialRecords={records} readOnly={true} />
+          <QATable key={product.id} productId={product.id} initialRecords={records} readOnly={true} />
         </div>
-        <ProductNotes productId={product.id} initialNotes={product.product_notes || ''} readOnly={true} />
+        <ProductNotes key={product.id + '-notes'} productId={product.id} initialNotes={product.product_notes || ''} readOnly={true} />
       </div>
     </main>
   );
