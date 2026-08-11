@@ -212,12 +212,16 @@ export default function DashboardClient({ products: initialProducts, groups: ini
 
   async function copyGroupShare(groupId: string) {
     const res = await fetch(`/api/product-groups/${groupId}/share`, { method: 'POST' });
-    if (!res.ok) return;
+    if (!res.ok) { alert('링크 생성에 실패했습니다.'); return; }
     const { token } = await res.json();
     const url = `${window.location.origin}/share/group/${token}`;
-    await navigator.clipboard.writeText(url);
     setGroups(g => g.map(x => x.id === groupId ? { ...x, share_token: token } : x));
-    alert('그룹 공유 링크가 클립보드에 복사되었습니다.');
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('그룹 공유 링크가 클립보드에 복사되었습니다.\n\n' + url);
+    } catch {
+      prompt('아래 링크를 복사하세요 (Ctrl+A → Ctrl+C):', url);
+    }
   }
 
   async function deleteGroup(groupId: string) {
