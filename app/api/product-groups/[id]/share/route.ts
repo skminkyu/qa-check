@@ -11,7 +11,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const db = getDb();
 
     // Ensure share_token column exists
-    try { db.exec('ALTER TABLE product_groups ADD COLUMN share_token TEXT UNIQUE'); } catch {}
+    try { db.exec('ALTER TABLE product_groups ADD COLUMN share_token TEXT'); } catch {}
+    try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_pg_share_token ON product_groups(share_token) WHERE share_token IS NOT NULL'); } catch {}
 
     const row = db.prepare('SELECT share_token FROM product_groups WHERE id = ?').get(id) as { share_token: string | null } | undefined;
     if (!row) return NextResponse.json({ error: 'Not found', id }, { status: 404 });

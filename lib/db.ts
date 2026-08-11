@@ -89,7 +89,8 @@ function initSchema(db: Database.Database) {
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN group_id TEXT REFERENCES product_groups(id) ON DELETE SET NULL'); } catch {}
-  try { db.exec('ALTER TABLE product_groups ADD COLUMN share_token TEXT UNIQUE'); } catch {}
+  try { db.exec('ALTER TABLE product_groups ADD COLUMN share_token TEXT'); } catch {}
+  try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_pg_share_token ON product_groups(share_token) WHERE share_token IS NOT NULL'); } catch {}
   db.exec(`UPDATE qa_templates SET file_url = '/attachments/원산지확약서.docx' WHERE item_name LIKE '%원산지 확약서%' AND (file_url IS NULL OR file_url = '')`);
   db.exec(`UPDATE qa_templates SET file_url = 'https://chemp.mcee.go.kr/SynapDocViewServer/viewer/doc.html?key=30760108f9364478a4f39cf851e462a9&convType=img&convLocale=ko_KR&contextPath=/SynapDocViewServer' WHERE item_name LIKE '%함유금지물질 성적서%' AND (file_url IS NULL OR file_url = '')`);
   db.exec(`UPDATE qa_templates SET file_url = 'https://www.foodsafetykorea.go.kr/portal/board/board.do?menu_grp=MENU_NEW01&menu_no=3701' WHERE item_name LIKE '%자가품질검사성적서%' AND (file_url IS NULL OR file_url = '')`);

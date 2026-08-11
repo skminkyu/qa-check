@@ -106,7 +106,7 @@ export default function SettingsClient({ initialCategories, initialTemplates, in
     flash('권한 변경됨');
   }
 
-  const catTemplates = templates.filter(t => t.category_id === selectedCat);
+  const catTemplates = templates.filter(t => t.category_id === selectedCat).sort((a, b) => a.sort_order - b.sort_order);
 
   return (
     <div>
