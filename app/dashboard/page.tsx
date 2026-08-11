@@ -38,7 +38,7 @@ export default async function DashboardPage() {
     created_at: string; recording_date: string; broadcast_date: string;
   }>;
 
-  const groups = db.prepare('SELECT * FROM product_groups ORDER BY created_at').all() as Array<{ id: string; name: string }>;
+  const groups = db.prepare('SELECT * FROM product_groups ORDER BY created_at').all() as Array<{ id: string; name: string; share_token: string | null }>;
 
   const completed = products.filter(p => {
     const effective = p.total_count - p.na_count;

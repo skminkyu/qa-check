@@ -9,7 +9,7 @@ interface Product {
   created_at: string; recording_date: string; broadcast_date: string;
 }
 
-interface Group { id: string; name: string; }
+interface Group { id: string; name: string; share_token?: string | null; }
 
 interface Props { products: Product[]; groups: Group[]; }
 
@@ -210,6 +210,16 @@ export default function DashboardClient({ products: initialProducts, groups: ini
     }
   }
 
+  async function copyGroupShare(groupId: string) {
+    const res = await fetch(`/api/product-groups/${groupId}/share`, { method: 'POST' });
+    if (!res.ok) return;
+    const { token } = await res.json();
+    const url = `${window.location.origin}/share/group/${token}`;
+    await navigator.clipboard.writeText(url);
+    setGroups(g => g.map(x => x.id === groupId ? { ...x, share_token: token } : x));
+    alert('그룹 공유 링크가 클립보드에 복사되었습니다.');
+  }
+
   async function deleteGroup(groupId: string) {
     if (!confirm('그룹을 삭제하면 소속 상품은 그룹 해제됩니다.')) return;
     await fetch(`/api/product-groups/${groupId}`, { method: 'DELETE' });
@@ -347,13 +357,21 @@ export default function DashboardClient({ products: initialProducts, groups: ini
               const collapsed = collapsedGroups.has(g.id);
               return (
                 <>
-                  <tr key={`group-${g.id}`} className="bg-violet-50 border-b border-violet-100 cursor-pointer select-none"
-                    onClick={() => toggleGroup(g.id)}>
+                  <tr key={`group-${g.id}`} className="bg-violet-50 border-b border-violet-100">
                     <td colSpan={8} className="px-5 py-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm">{collapsed ? '▶' : '▼'}</span>
-                        <span className="text-sm font-semibold text-violet-800">📁 {g.name}</span>
-                        <span className="text-xs text-violet-500">{gProducts.length}개 상품</span>
+                        <button onClick={() => toggleGroup(g.id)} className="flex items-center gap-2 flex-1 text-left">
+                          <span className="text-sm">{collapsed ? '▶' : '▼'}</span>
+                          <span className="text-sm font-semibold text-violet-800">📁 {g.name}</span>
+                          <span className="text-xs text-violet-500">{gProducts.length}개 상품</span>
+                        </button>
+                        <button
+                          onClick={() => copyGroupShare(g.id)}
+                          title="그룹 공유 링크 복사"
+                          className="text-xs flex items-center gap-1 px-2.5 py-1 rounded border border-violet-300 bg-white text-violet-600 hover:bg-violet-100 transition shrink-0"
+                        >
+                          🔗 공유 링크 복사
+                        </button>
                       </div>
                     </td>
                   </tr>
