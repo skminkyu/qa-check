@@ -32,7 +32,7 @@ function DdayBadge({ diff, label }: { diff: number | null; label: string }) {
   );
 }
 
-function ProductRow({ p, groups, onGroupChange }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void }) {
+function ProductRow({ p, groups, onGroupChange, inGroup }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void; inGroup?: boolean }) {
   const [showGroupMenu, setShowGroupMenu] = useState(false);
   const pct = p.total_count > 0 ? Math.round((p.done_count / p.total_count) * 100) : 0;
   const effective = p.total_count - p.na_count;
@@ -51,8 +51,8 @@ function ProductRow({ p, groups, onGroupChange }: { p: Product; groups: Group[];
   }
 
   return (
-    <tr className="border-b border-slate-100 hover:bg-slate-50 transition">
-      <td className="px-5 py-3 font-medium text-slate-800">
+    <tr className={`border-b transition ${inGroup ? 'border-violet-50 bg-violet-50/30 hover:bg-violet-50/60' : 'border-slate-100 hover:bg-slate-50'}`}>
+      <td className={`py-3 font-medium text-slate-800 ${inGroup ? 'pl-10 pr-5' : 'px-5'}`}>
         <div className="flex items-center gap-2">
           <span>{p.name}</span>
           <div className="relative">
@@ -380,13 +380,18 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                     </td>
                   </tr>
                   {!collapsed && gProducts.map(p => (
-                    <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} />
+                    <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} inGroup />
                   ))}
                 </>
               );
             })}
 
             {/* Ungrouped products */}
+            {groupedProducts.ungrouped.length > 0 && groups.some(g => (groupedProducts.byGroup.get(g.id) || []).length > 0) && (
+              <tr><td colSpan={8} className="px-5 pt-4 pb-1">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">단독 상품</span>
+              </td></tr>
+            )}
             {groupedProducts.ungrouped.map(p => (
               <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} />
             ))}
