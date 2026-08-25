@@ -2,6 +2,28 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 
+function DeleteModal({ productName, onConfirm, onCancel }: { productName: string; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-2xl">⚠️</span>
+          <h2 className="text-base font-bold text-slate-800">상품 삭제</h2>
+        </div>
+        <p className="text-sm text-slate-600 mb-1">아래 상품을 삭제하시겠습니까?</p>
+        <p className="text-sm font-semibold text-slate-800 mb-3">"{productName}"</p>
+        <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-5">
+          상품을 삭제하면 QA 체크 내용 및 세부 정보가 모두 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+        </p>
+        <div className="flex gap-2 justify-end">
+          <button onClick={onCancel} className="px-4 py-2 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition">아니오</button>
+          <button onClick={onConfirm} className="px-4 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition font-medium">예, 삭제합니다</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Product {
   id: string; name: string; category_name: string; partner_name: string; md_name: string;
   group_id: string | null; group_name: string | null;
@@ -35,6 +57,7 @@ function DdayBadge({ diff, label }: { diff: number | null; label: string }) {
 function ProductRow({ p, groups, onGroupChange, onDelete, inGroup }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void; onDelete: (productId: string) => void; inGroup?: boolean }) {
   const [showGroupMenu, setShowGroupMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const pct = p.total_count > 0 ? Math.round((p.done_count / p.total_count) * 100) : 0;
   const effective = p.total_count - p.na_count;
   const effectivePct = effective > 0 ? Math.round((p.done_count / effective) * 100) : 0;
@@ -121,19 +144,21 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup }: { p: Produc
       <td className="px-5 py-3">
         <div className="flex items-center gap-3">
           <Link href={`/products/${p.id}`} className="text-blue-600 hover:underline text-xs whitespace-nowrap">상세 보기</Link>
-          {confirmDelete ? (
-            <span className="flex items-center gap-1.5 text-xs">
-              <span className="text-red-600 font-medium whitespace-nowrap">삭제할까요?</span>
-              <button onClick={async () => { await fetch(`/api/products/${p.id}`, { method: 'DELETE' }); onDelete(p.id); }}
-                className="px-2 py-0.5 rounded bg-red-500 text-white hover:bg-red-600 transition">예</button>
-              <button onClick={() => setConfirmDelete(false)}
-                className="px-2 py-0.5 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 transition">아니오</button>
-            </span>
-          ) : (
-            <button onClick={() => setConfirmDelete(true)}
-              className="text-slate-300 hover:text-red-400 text-xs transition whitespace-nowrap">삭제</button>
-          )}
+          <button onClick={() => setConfirmDelete(true)}
+            className="text-slate-300 hover:text-red-400 text-xs transition whitespace-nowrap">삭제</button>
         </div>
+        {confirmDelete && (
+          <DeleteModal
+            productName={p.name}
+            onCancel={() => setConfirmDelete(false)}
+            onConfirm={async () => {
+              if (deleting) return;
+              setDeleting(true);
+              await fetch(`/api/products/${p.id}`, { method: 'DELETE' });
+              onDelete(p.id);
+            }}
+          />
+        )}
       </td>
     </tr>
   );
