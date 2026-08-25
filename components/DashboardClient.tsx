@@ -32,8 +32,9 @@ function DdayBadge({ diff, label }: { diff: number | null; label: string }) {
   );
 }
 
-function ProductRow({ p, groups, onGroupChange, inGroup }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void; inGroup?: boolean }) {
+function ProductRow({ p, groups, onGroupChange, onDelete, inGroup }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void; onDelete: (productId: string) => void; inGroup?: boolean }) {
   const [showGroupMenu, setShowGroupMenu] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const pct = p.total_count > 0 ? Math.round((p.done_count / p.total_count) * 100) : 0;
   const effective = p.total_count - p.na_count;
   const effectivePct = effective > 0 ? Math.round((p.done_count / effective) * 100) : 0;
@@ -118,7 +119,21 @@ function ProductRow({ p, groups, onGroupChange, inGroup }: { p: Product; groups:
       </td>
       <td className="px-5 py-3 text-slate-500 text-xs">{p.created_at.slice(0, 10)}</td>
       <td className="px-5 py-3">
-        <Link href={`/products/${p.id}`} className="text-blue-600 hover:underline text-xs">상세 보기</Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/products/${p.id}`} className="text-blue-600 hover:underline text-xs whitespace-nowrap">상세 보기</Link>
+          {confirmDelete ? (
+            <span className="flex items-center gap-1.5 text-xs">
+              <span className="text-red-600 font-medium whitespace-nowrap">삭제할까요?</span>
+              <button onClick={async () => { await fetch(`/api/products/${p.id}`, { method: 'DELETE' }); onDelete(p.id); }}
+                className="px-2 py-0.5 rounded bg-red-500 text-white hover:bg-red-600 transition">예</button>
+              <button onClick={() => setConfirmDelete(false)}
+                className="px-2 py-0.5 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 transition">아니오</button>
+            </span>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)}
+              className="text-slate-300 hover:text-red-400 text-xs transition whitespace-nowrap">삭제</button>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -178,6 +193,10 @@ export default function DashboardClient({ products: initialProducts, groups: ini
       })
       .sort((a, b) => (a.minDiff ?? 999) - (b.minDiff ?? 999));
   }, [products]);
+
+  function handleDelete(productId: string) {
+    setProducts(prev => prev.filter(p => p.id !== productId));
+  }
 
   function handleGroupChange(productId: string, groupId: string | null) {
     setProducts(prev => prev.map(p => {
@@ -380,7 +399,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                     </td>
                   </tr>
                   {!collapsed && gProducts.map(p => (
-                    <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} inGroup />
+                    <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} inGroup />
                   ))}
                 </>
               );
@@ -393,7 +412,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
               </td></tr>
             )}
             {groupedProducts.ungrouped.map(p => (
-              <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} />
+              <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} />
             ))}
           </tbody>
         </table>
