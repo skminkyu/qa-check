@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { getDb } from '@/lib/db';
 import QATable from '@/components/QATable';
 import ProductNotes from '@/components/ProductNotes';
-import CaptureImageButton from '@/components/CaptureImageButton';
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -43,10 +42,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     <div className="min-h-screen bg-slate-50">
       <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
         <span className="font-bold text-slate-800">QA 체크 시스템</span>
-        <div className="flex items-center gap-3">
-          <CaptureImageButton targetId="qa-capture-area" filename={product.name} shareToken={token} />
-          <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full">읽기 전용</span>
-        </div>
+        <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full">읽기 전용</span>
       </div>
       <main className="w-full px-4 py-8">
         <div>
@@ -85,11 +81,14 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             })()}
           </div>
           <div id="qa-capture-area" className="mb-6">
-            {product.mfr_eval_target === 'target' && (
+            {(product.mfr_eval_target === 'target' || product.mfr_eval_target === 'non_target') && (
               <div className="mb-6 border border-slate-200 rounded-xl bg-white overflow-hidden">
                 <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
                   <span className="text-sm font-semibold text-slate-700">제조사 평가</span>
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">대상</span>
+                  {product.mfr_eval_target === 'target'
+                    ? <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">대상</span>
+                    : <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">비대상 (제외/면제)</span>
+                  }
                 </div>
                 <div className="px-5 py-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -106,7 +105,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                       </div>
                     )}
                   </div>
-                  {product.mfr_eval_notes && (
+                  {product.mfr_eval_target === 'target' && product.mfr_eval_notes && (
                     <div>
                       <div className="text-xs font-semibold text-slate-500 mb-1">평가 확인 사항</div>
                       <pre className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100 leading-relaxed">{product.mfr_eval_notes}</pre>
