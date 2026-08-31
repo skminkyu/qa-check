@@ -6,6 +6,7 @@ import ProductNotes from '@/components/ProductNotes';
 interface Product {
   id: string; name: string; partner_name: string; md_name: string;
   recording_date: string; broadcast_date: string; product_notes: string; category_name: string;
+  mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null;
 }
 
 interface RecordRow {
@@ -85,6 +86,39 @@ export default function GroupShareClient({ products, allRecords, groupName }: Pr
           {product.recording_date && <DdayBadge dateStr={product.recording_date} label="🎬 녹화" />}
           {product.broadcast_date && <DdayBadge dateStr={product.broadcast_date} label="📺 송출" />}
         </div>
+        {(product.mfr_eval_target === 'target' || product.mfr_eval_target === 'non_target') && (
+          <div className="mb-6 border border-slate-200 rounded-xl bg-white overflow-hidden">
+            <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-700">제조사 평가</span>
+              {product.mfr_eval_target === 'target'
+                ? <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">대상</span>
+                : <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">비대상 (제외/면제)</span>
+              }
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                {product.mfr_eval_name && (
+                  <div>
+                    <div className="text-xs font-semibold text-slate-500 mb-1">제조사명</div>
+                    <div className="text-sm text-slate-800">{product.mfr_eval_name}</div>
+                  </div>
+                )}
+                {product.mfr_eval_location && (
+                  <div>
+                    <div className="text-xs font-semibold text-slate-500 mb-1">소재지</div>
+                    <div className="text-sm text-slate-800">{product.mfr_eval_location}</div>
+                  </div>
+                )}
+              </div>
+              {product.mfr_eval_target === 'target' && product.mfr_eval_notes && (
+                <div>
+                  <div className="text-xs font-semibold text-slate-500 mb-1">평가 확인 사항</div>
+                  <pre className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100 leading-relaxed">{product.mfr_eval_notes}</pre>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div className="mb-6">
           <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
           <QATable key={product.id} productId={product.id} initialRecords={records} readOnly={true} />
