@@ -5,7 +5,8 @@ import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import { TextStyle, Color } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { ImageLightbox } from './ImageLightbox';
 
 interface Props {
   value: string;
@@ -88,6 +89,11 @@ function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
 export default function InlineEditor({ value, onChange, onBlur, placeholder, readOnly = false, rows = 3 }: Props) {
   const minHeight = `${rows * 1.6}rem`;
   const [focused, setFocused] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const handleImgClick = useCallback((e: React.MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (t.tagName === 'IMG') setLightboxSrc((t as HTMLImageElement).src);
+  }, []);
 
   const editor = useEditor({
     extensions: [
@@ -145,13 +151,17 @@ export default function InlineEditor({ value, onChange, onBlur, placeholder, rea
   if (readOnly && !editor.getText().trim()) return null;
 
   return (
-    <div className={`w-full text-xs rounded border transition ${
-      readOnly
-        ? 'border-transparent [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded [&_img]:my-1'
-        : focused
-          ? 'border-blue-300 ring-1 ring-blue-300 [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded [&_img]:my-1'
-          : 'border-transparent [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded [&_img]:my-1'
-    }`}>
+    <div
+      className={`w-full text-xs rounded border transition ${
+        readOnly
+          ? 'border-transparent [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded [&_img]:my-1 [&_img]:cursor-zoom-in'
+          : focused
+            ? 'border-blue-300 ring-1 ring-blue-300 [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded [&_img]:my-1 [&_img]:cursor-zoom-in'
+            : 'border-transparent [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded [&_img]:my-1 [&_img]:cursor-zoom-in'
+      }`}
+      onClick={handleImgClick}
+    >
+      {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       {!readOnly && focused && <Toolbar editor={editor} />}
       <div className="relative px-1 py-0.5">
         <EditorContent

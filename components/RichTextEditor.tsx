@@ -7,7 +7,8 @@ import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ImageLightbox } from './ImageLightbox';
 
 interface Props {
   content: string;
@@ -20,6 +21,7 @@ const COLORS = ['#000000', '#e53e3e', '#dd6b20', '#d69e2e', '#38a169', '#3182ce'
 
 export default function RichTextEditor({ content, onChange, onBlur, readOnly = false }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -61,7 +63,11 @@ export default function RichTextEditor({ content, onChange, onBlur, readOnly = f
   if (!editor) return null;
 
   return (
-    <div className={`border border-slate-200 rounded-lg overflow-hidden ${readOnly ? '' : 'focus-within:ring-2 focus-within:ring-blue-300'}`}>
+    <div
+      className={`border border-slate-200 rounded-lg overflow-hidden ${readOnly ? '' : 'focus-within:ring-2 focus-within:ring-blue-300'}`}
+      onClick={e => { const t = e.target as HTMLElement; if (t.tagName === 'IMG') setLightboxSrc((t as HTMLImageElement).src); }}
+    >
+      {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       {!readOnly && (
         <div className="flex flex-wrap items-center gap-1 px-2 py-1.5 bg-slate-50 border-b border-slate-200">
           <button type="button"
@@ -140,7 +146,7 @@ export default function RichTextEditor({ content, onChange, onBlur, readOnly = f
       )}
       <EditorContent
         editor={editor}
-        className={`prose prose-sm max-w-none px-3 py-2 min-h-[120px] text-sm text-slate-800 focus:outline-none [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded [&_img]:my-2 ${readOnly ? 'bg-slate-50' : 'bg-white'}`}
+        className={`prose prose-sm max-w-none px-3 py-2 min-h-[120px] text-sm text-slate-800 focus:outline-none [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded [&_img]:my-2 [&_img]:cursor-zoom-in ${readOnly ? 'bg-slate-50' : 'bg-white'}`}
       />
     </div>
   );
