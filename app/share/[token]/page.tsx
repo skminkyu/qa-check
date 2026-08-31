@@ -17,7 +17,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string } | undefined;
+  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string; mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null } | undefined;
 
   if (!product) notFound();
 
@@ -85,6 +85,36 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             })()}
           </div>
           <div id="qa-capture-area" className="mb-6">
+            {product.mfr_eval_target === 'target' && (
+              <div className="mb-6 border border-slate-200 rounded-xl bg-white overflow-hidden">
+                <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-700">제조사 평가</span>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">대상</span>
+                </div>
+                <div className="px-5 py-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {product.mfr_eval_name && (
+                      <div>
+                        <div className="text-xs font-semibold text-slate-500 mb-1">제조사명</div>
+                        <div className="text-sm text-slate-800">{product.mfr_eval_name}</div>
+                      </div>
+                    )}
+                    {product.mfr_eval_location && (
+                      <div>
+                        <div className="text-xs font-semibold text-slate-500 mb-1">소재지</div>
+                        <div className="text-sm text-slate-800">{product.mfr_eval_location}</div>
+                      </div>
+                    )}
+                  </div>
+                  {product.mfr_eval_notes && (
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500 mb-1">평가 확인 사항</div>
+                      <pre className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100 leading-relaxed">{product.mfr_eval_notes}</pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
             <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
           </div>
