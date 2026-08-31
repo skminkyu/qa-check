@@ -90,6 +90,10 @@ function initSchema(db: Database.Database) {
   )`); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN group_id TEXT REFERENCES product_groups(id) ON DELETE SET NULL'); } catch {}
   try { db.exec('ALTER TABLE product_groups ADD COLUMN share_token TEXT'); } catch {}
+  try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_target TEXT'); } catch {}
+  try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_name TEXT'); } catch {}
+  try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_location TEXT'); } catch {}
+  try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_notes TEXT'); } catch {}
   try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_pg_share_token ON product_groups(share_token) WHERE share_token IS NOT NULL'); } catch {}
   db.exec(`UPDATE qa_templates SET file_url = '/attachments/원산지확약서.docx' WHERE item_name LIKE '%원산지 확약서%' AND (file_url IS NULL OR file_url = '')`);
   db.exec(`UPDATE qa_templates SET file_url = 'https://chemp.mcee.go.kr/SynapDocViewServer/viewer/doc.html?key=1af51a8dae3c4ec9baadd69422396881&convType=img&convLocale=ko_KR&contextPath=/SynapDocViewServer' WHERE item_name LIKE '%함유금지물질 성적서%'`);

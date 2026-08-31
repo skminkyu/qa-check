@@ -10,6 +10,7 @@ import ProductNotes from '@/components/ProductNotes';
 import ProductHeader from '@/components/ProductHeader';
 import SendEmailButton from '@/components/SendEmailButton';
 import CaptureImageButton from '@/components/CaptureImageButton';
+import ManufacturerEval from '@/components/ManufacturerEval';
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -22,7 +23,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; contact_email: string; cc_email: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string } | undefined;
+  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; contact_email: string; cc_email: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string; mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null } | undefined;
 
   if (!product) notFound();
 
@@ -66,6 +67,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <CaptureImageButton targetId="qa-capture-area" filename={product.name} productId={id} />
           </div>
         </div>
+
+        {/* 제조사 평가 */}
+        <ManufacturerEval
+          productId={id}
+          categoryName={product.category_name}
+          initialTarget={product.mfr_eval_target}
+          initialName={product.mfr_eval_name}
+          initialLocation={product.mfr_eval_location}
+          initialNotes={product.mfr_eval_notes}
+          readOnly={readOnly}
+        />
 
         {/* QA 체크리스트 (캡처 영역) */}
         <div id="qa-capture-area" className="mb-6">
