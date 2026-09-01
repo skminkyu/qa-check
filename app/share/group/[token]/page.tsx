@@ -22,7 +22,7 @@ export default async function GroupSharePage({ params }: { params: Promise<{ tok
   `).all(group.id) as Array<{
     id: string; name: string; partner_name: string; md_name: string;
     recording_date: string; broadcast_date: string; product_notes: string; category_name: string;
-    mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null;
+    mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number;
   }>;
 
   const allRecords = products.map(p => {

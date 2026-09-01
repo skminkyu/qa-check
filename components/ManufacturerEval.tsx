@@ -8,6 +8,7 @@ interface Props {
   initialName: string | null;
   initialLocation: string | null;
   initialNotes: string | null;
+  initialCompleted: boolean;
   readOnly?: boolean;
 }
 
@@ -70,7 +71,7 @@ function getDefaultNotes(categoryName: string): string {
 
 export default function ManufacturerEval({
   productId, categoryName,
-  initialTarget, initialName, initialLocation, initialNotes,
+  initialTarget, initialName, initialLocation, initialNotes, initialCompleted,
   readOnly = false,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -80,17 +81,19 @@ export default function ManufacturerEval({
   const [mfrName, setMfrName] = useState(initialName ?? '');
   const [location, setLocation] = useState(initialLocation ?? '');
   const [notes, setNotes] = useState(initialNotes ?? '');
+  const [completed, setCompleted] = useState(initialCompleted);
   const [saved, setSaved] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hasNoDefault = NO_DEFAULT_CATEGORIES.includes(categoryName);
 
-  async function save(overrides?: Partial<{ target: string | null; mfrName: string; location: string; notes: string }>) {
+  async function save(overrides?: Partial<{ target: string | null; mfrName: string; location: string; notes: string; completed: boolean }>) {
     const payload = {
       mfrEvalTarget: overrides?.target !== undefined ? overrides.target : target,
       mfrEvalName: overrides?.mfrName !== undefined ? overrides.mfrName : mfrName,
       mfrEvalLocation: overrides?.location !== undefined ? overrides.location : location,
       mfrEvalNotes: overrides?.notes !== undefined ? overrides.notes : notes,
+      mfrEvalCompleted: overrides?.completed !== undefined ? overrides.completed : completed,
     };
     await fetch(`/api/products/${productId}`, {
       method: 'PATCH',
@@ -123,6 +126,7 @@ export default function ManufacturerEval({
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-slate-700">제조사 평가</span>
           {target === 'target' && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">대상</span>}
+          {target === 'target' && completed && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">✓ 완료</span>}
           {target === 'non_target' && <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">비대상</span>}
           {mfrName && <span className="text-xs text-slate-400">— {mfrName}</span>}
         </div>
@@ -155,6 +159,21 @@ export default function ManufacturerEval({
                 />
                 <span className="text-sm text-slate-700">비대상 (제외/면제)</span>
               </label>
+              {target === 'target' && !readOnly && (
+                <label className="flex items-center gap-2 cursor-pointer select-none ml-4 pl-4 border-l border-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={completed}
+                    onChange={() => {
+                      const next = !completed;
+                      setCompleted(next);
+                      save({ completed: next });
+                    }}
+                    className="w-4 h-4 accent-emerald-600"
+                  />
+                  <span className="text-sm font-medium text-emerald-700">완료</span>
+                </label>
+              )}
             </div>
           </div>
 
@@ -190,8 +209,8 @@ export default function ManufacturerEval({
             </div>
           </div>
 
-          {/* 평가 내용 (대상인 경우에만) */}
-          {target === 'target' && (
+          {/* 평가 내용 (대상이고 완료 아닌 경우에만) */}
+          {target === 'target' && !completed && (
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-xs font-semibold text-slate-500">평가 확인 사항</label>

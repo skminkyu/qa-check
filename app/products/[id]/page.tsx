@@ -23,7 +23,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; contact_email: string; cc_email: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string; mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null } | undefined;
+  `).get(id) as { id: string; name: string; category_name: string; partner_name: string; md_name: string; contact_email: string; cc_email: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string; mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number } | undefined;
 
   if (!product) notFound();
 
@@ -76,6 +76,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           initialName={product.mfr_eval_name}
           initialLocation={product.mfr_eval_location}
           initialNotes={product.mfr_eval_notes}
+          initialCompleted={!!product.mfr_eval_completed}
           readOnly={readOnly}
         />
 

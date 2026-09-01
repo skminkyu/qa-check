@@ -16,7 +16,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string; mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null } | undefined;
+  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string; mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number } | undefined;
 
   if (!product) notFound();
 
@@ -89,6 +89,9 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                     ? <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">대상</span>
                     : <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">비대상 (제외/면제)</span>
                   }
+                  {product.mfr_eval_target === 'target' && !!product.mfr_eval_completed && (
+                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">✓ 완료</span>
+                  )}
                 </div>
                 <div className="px-5 py-4 space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -105,7 +108,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                       </div>
                     )}
                   </div>
-                  {product.mfr_eval_target === 'target' && product.mfr_eval_notes && (
+                  {product.mfr_eval_target === 'target' && !product.mfr_eval_completed && product.mfr_eval_notes && (
                     <div>
                       <div className="text-xs font-semibold text-slate-500 mb-1">평가 확인 사항</div>
                       <pre className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100 leading-relaxed">{product.mfr_eval_notes}</pre>
