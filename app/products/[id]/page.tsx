@@ -11,6 +11,7 @@ import ProductHeader from '@/components/ProductHeader';
 import SendEmailButton from '@/components/SendEmailButton';
 import CaptureImageButton from '@/components/CaptureImageButton';
 import ManufacturerEval from '@/components/ManufacturerEval';
+import SendRemindButton from '@/components/SendRemindButton';
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -64,6 +65,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <div className="flex flex-col items-end gap-2">
             {!readOnly && <ShareButton productId={id} initialToken={shareToken} />}
             {!readOnly && <SendEmailButton productId={id} hasEmail={!!product.contact_email} />}
+            {!readOnly && !!product.contact_email && <SendRemindButton productId={id} />}
             <CaptureImageButton targetId="qa-capture-area" filename={product.name} productId={id} />
           </div>
         </div>
