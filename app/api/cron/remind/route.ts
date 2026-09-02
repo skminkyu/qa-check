@@ -53,7 +53,7 @@ ${shareUrl}
   if (ccList.length > 0) sendOpts.cc = ccList;
 
   const { error } = await resend.emails.send(sendOpts);
-  return error ? { error: String(error) } : { ok: true, to: toList, cc: ccList };
+  return error ? { error: error.message ?? JSON.stringify(error) } : { ok: true, to: toList, cc: ccList };
 }
 
 // POST /api/cron/remind — cron 자동 실행 (D-5 체크)

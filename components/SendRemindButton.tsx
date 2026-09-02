@@ -15,7 +15,7 @@ export default function SendRemindButton({ productId }: { productId: string }) {
       if (data.ok) {
         setMsg(`✓ 발송 완료 (${data.to?.join(', ')})`);
       } else {
-        setMsg(`오류: ${data.error}`);
+        setMsg(`오류: ${typeof data.error === 'string' ? data.error : JSON.stringify(data.error)}`);
       }
     } catch {
       setMsg('발송 실패');
