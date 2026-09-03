@@ -12,6 +12,7 @@ import SendEmailButton from '@/components/SendEmailButton';
 import CaptureImageButton from '@/components/CaptureImageButton';
 import ManufacturerEval from '@/components/ManufacturerEval';
 import SendRemindButton from '@/components/SendRemindButton';
+import ChatPanel from '@/components/ChatPanel';
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -92,6 +93,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           initialNotes={product.product_notes || ''}
           readOnly={readOnly}
         />
+        <ChatPanel productId={id} />
       </main>
     </div>
   );

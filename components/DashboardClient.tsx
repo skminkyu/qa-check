@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 
 function DeleteModal({ productName, onConfirm, onCancel }: { productName: string; onConfirm: () => void; onCancel: () => void }) {
@@ -54,7 +54,7 @@ function DdayBadge({ diff, label }: { diff: number | null; label: string }) {
   );
 }
 
-function ProductRow({ p, groups, onGroupChange, onDelete, inGroup }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void; onDelete: (productId: string) => void; inGroup?: boolean }) {
+function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void; onDelete: (productId: string) => void; inGroup?: boolean; unread?: number }) {
   const [showGroupMenu, setShowGroupMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -79,6 +79,9 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup }: { p: Produc
       <td className={`py-3 font-medium text-slate-800 ${inGroup ? 'pl-10 pr-5' : 'px-5'}`}>
         <div className="flex items-center gap-2">
           <span>{p.name}</span>
+          {!!unread && (
+            <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-medium animate-pulse">💬 {unread}</span>
+          )}
           <div className="relative">
             <button
               onClick={() => setShowGroupMenu(v => !v)}
@@ -175,6 +178,27 @@ export default function DashboardClient({ products: initialProducts, groups: ini
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [newGroupName, setNewGroupName] = useState('');
   const [showGroupCreate, setShowGroupCreate] = useState(false);
+  const [unreadProducts, setUnreadProducts] = useState<Record<string, number>>({});
+  const [unreadGroups, setUnreadGroups] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    async function fetchUnread() {
+      try {
+        const res = await fetch('/api/chat/unread');
+        if (!res.ok) return;
+        const data = await res.json();
+        const pm: Record<string, number> = {};
+        (data.products || []).forEach((r: { id: string; count: number }) => { pm[r.id] = r.count; });
+        const gm: Record<string, number> = {};
+        (data.groups || []).forEach((r: { id: string; count: number }) => { gm[r.id] = r.count; });
+        setUnreadProducts(pm);
+        setUnreadGroups(gm);
+      } catch {}
+    }
+    fetchUnread();
+    const t = setInterval(fetchUnread, 10000);
+    return () => clearInterval(t);
+  }, []);
 
   const categories = useMemo(() => Array.from(new Set(products.map(p => p.category_name))).sort(), [products]);
   const partners = useMemo(() => Array.from(new Set(products.map(p => p.partner_name).filter(Boolean))).sort(), [products]);
@@ -412,6 +436,9 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                           <span className="text-sm">{collapsed ? '▶' : '▼'}</span>
                           <span className="text-sm font-semibold text-violet-800">📁 {g.name}</span>
                           <span className="text-xs text-violet-500">{gProducts.length}개 상품</span>
+                          {!!unreadGroups[g.id] && (
+                            <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-medium animate-pulse">💬 {unreadGroups[g.id]}</span>
+                          )}
                         </button>
                         <button
                           onClick={() => copyGroupShare(g.id)}
@@ -424,7 +451,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                     </td>
                   </tr>
                   {!collapsed && gProducts.map(p => (
-                    <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} inGroup />
+                    <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} inGroup unread={unreadProducts[p.id]} />
                   ))}
                 </>
               );
@@ -437,7 +464,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
               </td></tr>
             )}
             {groupedProducts.ungrouped.map(p => (
-              <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} />
+              <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} unread={unreadProducts[p.id]} />
             ))}
           </tbody>
         </table>

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
 import { getDb } from '@/lib/db';
 import GroupShareClient from '@/components/GroupShareClient';
+import ChatWidget from '@/components/ChatWidget';
 
 export default async function GroupSharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -50,6 +51,7 @@ export default async function GroupSharePage({ params }: { params: Promise<{ tok
         <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full">읽기 전용</span>
       </div>
       <GroupShareClient products={products} allRecords={allRecords} groupName={group.name} />
+      <ChatWidget groupId={group.id} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getDb } from '@/lib/db';
 import QATable from '@/components/QATable';
 import ProductNotes from '@/components/ProductNotes';
+import ChatWidget from '@/components/ChatWidget';
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -123,6 +124,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
           <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
         </div>
       </main>
+      <ChatWidget productId={shareRow.product_id} />
     </div>
   );
 }
