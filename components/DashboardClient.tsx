@@ -80,7 +80,9 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
         <div className="flex items-center gap-2">
           <span>{p.name}</span>
           {!!unread && (
-            <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-medium animate-pulse">💬 {unread}</span>
+            <span className="inline-flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] px-1 animate-pulse">
+              {unread}
+            </span>
           )}
           <div className="relative">
             <button
@@ -437,7 +439,9 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                           <span className="text-sm font-semibold text-violet-800">📁 {g.name}</span>
                           <span className="text-xs text-violet-500">{gProducts.length}개 상품</span>
                           {!!unreadGroups[g.id] && (
-                            <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-medium animate-pulse">💬 {unreadGroups[g.id]}</span>
+                            <span className="inline-flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] px-1 animate-pulse">
+                              {unreadGroups[g.id]}
+                            </span>
                           )}
                         </button>
                         <button

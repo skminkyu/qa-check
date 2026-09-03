@@ -16,7 +16,8 @@ interface Props {
 }
 
 function formatKST(dateStr: string) {
-  return new Date(dateStr).toLocaleString('ko-KR', {
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + 'Z');
+  return d.toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit',
@@ -92,11 +93,6 @@ export default function ChatPanel({ productId, groupId }: Props) {
         title="외부 문의 확인"
       >
         💬
-        {unread > 0 && !open && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
-            {unread}
-          </span>
-        )}
       </button>
 
       {/* 채팅창 */}
