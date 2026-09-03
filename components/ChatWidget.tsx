@@ -14,6 +14,13 @@ interface Props {
   groupId?: string;
 }
 
+function formatKST(dateStr: string) {
+  return new Date(dateStr).toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
 export default function ChatWidget({ productId, groupId }: Props) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -110,7 +117,7 @@ export default function ChatWidget({ productId, groupId }: Props) {
                       {m.is_admin && <div className="text-xs font-semibold text-violet-600 mb-0.5">관리자</div>}
                       <p className="whitespace-pre-wrap">{m.message}</p>
                       <p className={`text-xs mt-1 ${m.is_admin ? 'text-slate-400' : 'text-violet-200'}`}>
-                        {new Date(m.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                        {formatKST(m.created_at)}
                       </p>
                     </div>
                   </div>

@@ -5,6 +5,7 @@ interface Message {
   id: string;
   sender_name: string;
   is_admin: number;
+  is_read: number;
   message: string;
   created_at: string;
 }
@@ -12,6 +13,14 @@ interface Message {
 interface Props {
   productId?: string;
   groupId?: string;
+}
+
+function formatKST(dateStr: string) {
+  return new Date(dateStr).toLocaleString('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  });
 }
 
 export default function ChatPanel({ productId, groupId }: Props) {
@@ -30,8 +39,8 @@ export default function ChatPanel({ productId, groupId }: Props) {
     const data = await res.json();
     if (data.messages) {
       setMessages(data.messages);
-      const unreadCount = data.messages.filter((m: Message) => !m.is_admin && !open).length;
-      if (!open) setUnread(data.messages.filter((m: Message) => m.is_admin === 0).length);
+      const unreadCount = data.messages.filter((m: Message) => m.is_admin === 0 && m.is_read === 0).length;
+      setUnread(unreadCount);
     }
   }
 
@@ -53,9 +62,13 @@ export default function ChatPanel({ productId, groupId }: Props) {
   useEffect(() => {
     if (open) {
       markRead();
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
-  }, [open, messages]);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   async function sendMessage() {
     if (!input.trim() || sending) return;
@@ -70,34 +83,40 @@ export default function ChatPanel({ productId, groupId }: Props) {
     setSending(false);
   }
 
-  const externalCount = messages.filter(m => m.is_admin === 0).length;
-
   return (
-    <div className="mb-6 border border-slate-200 rounded-xl bg-white overflow-hidden">
+    <>
+      {/* 플로팅 버튼 */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition text-left"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-violet-600 text-white shadow-lg flex items-center justify-center text-2xl hover:bg-violet-700 transition"
+        title="외부 문의 확인"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-slate-700">💬 외부 문의</span>
-          {externalCount > 0 && (
-            <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
-              {externalCount}건
-            </span>
-          )}
-          {unread > 0 && !open && (
-            <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-medium animate-pulse">
-              NEW {unread}
-            </span>
-          )}
-        </div>
-        <span className="text-slate-400 text-sm">{open ? '▲ 접기' : '▼ 펼치기'}</span>
+        💬
+        {unread > 0 && !open && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+            {unread}
+          </span>
+        )}
       </button>
 
+      {/* 채팅창 */}
       {open && (
-        <div className="border-t border-slate-100">
+        <div className="fixed bottom-24 right-6 z-50 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden" style={{ height: '420px' }}>
+          {/* 헤더 */}
+          <div className="bg-violet-600 px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-white font-semibold text-sm">외부 문의</span>
+              {messages.filter(m => m.is_admin === 0).length > 0 && (
+                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">
+                  {messages.filter(m => m.is_admin === 0).length}건
+                </span>
+              )}
+            </div>
+            <button onClick={() => setOpen(false)} className="text-violet-200 hover:text-white text-lg">✕</button>
+          </div>
+
           {/* 메시지 목록 */}
-          <div className="h-72 overflow-y-auto px-4 py-3 space-y-2 bg-slate-50">
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-slate-50">
             {messages.length === 0 && (
               <p className="text-xs text-slate-400 text-center mt-8">아직 문의가 없습니다.</p>
             )}
@@ -107,7 +126,7 @@ export default function ChatPanel({ productId, groupId }: Props) {
                   {!m.is_admin && <div className="text-xs font-semibold text-slate-500 mb-0.5">{m.sender_name}</div>}
                   <p className="whitespace-pre-wrap">{m.message}</p>
                   <p className={`text-xs mt-1 ${m.is_admin ? 'text-violet-200' : 'text-slate-400'}`}>
-                    {new Date(m.created_at).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {formatKST(m.created_at)}
                   </p>
                 </div>
               </div>
@@ -116,24 +135,24 @@ export default function ChatPanel({ productId, groupId }: Props) {
           </div>
 
           {/* 입력창 */}
-          <div className="px-4 py-3 border-t border-slate-100 flex gap-2 bg-white">
+          <div className="px-3 py-2 border-t border-slate-100 flex gap-2 bg-white">
             <input
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendMessage())}
               placeholder="답변 입력..."
-              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400"
+              className="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400"
             />
             <button
               onClick={sendMessage}
               disabled={sending || !input.trim()}
-              className="bg-violet-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-violet-700 transition disabled:opacity-40"
+              className="bg-violet-600 text-white rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-violet-700 transition disabled:opacity-40"
             >
               전송
             </button>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
