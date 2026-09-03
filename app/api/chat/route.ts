@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
   // source='external'이면 세션 무관하게 외부 사용자로 처리
   const session = source === 'external' ? null : await getSession();
   const isAdmin = source === 'admin' ? !!session : source === 'external' ? false : !!session;
-  const name = isAdmin ? (session?.name || '관리자') : (senderName?.trim() || '외부 사용자');
+  const cleanName = typeof senderName === 'string' ? senderName.trim() : '';
+  const name = isAdmin ? (session?.name || '관리자') : (cleanName || '외부 사용자');
 
   const db = getDb();
   const id = uuidv4();
