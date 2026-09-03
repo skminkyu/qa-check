@@ -77,7 +77,7 @@ export default function ChatPanel({ productId, groupId }: Props) {
     await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId, groupId, senderName: '관리자', message: input.trim() }),
+      body: JSON.stringify({ productId, groupId, senderName: '관리자', message: input.trim(), source: 'admin' }),
     });
     setInput('');
     await fetchMessages();

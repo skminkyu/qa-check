@@ -61,7 +61,7 @@ export default function ChatWidget({ productId, groupId }: Props) {
     await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId, groupId, senderName, message: input.trim() }),
+      body: JSON.stringify({ productId, groupId, senderName, message: input.trim(), source: 'external' }),
     });
     setInput('');
     await fetchMessages();

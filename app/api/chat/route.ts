@@ -20,13 +20,14 @@ export async function GET(req: NextRequest) {
 
 // POST /api/chat — 메시지 전송
 export async function POST(req: NextRequest) {
-  const { productId, groupId, senderName, message } = await req.json();
+  const { productId, groupId, senderName, message, source } = await req.json();
   if (!message?.trim()) return NextResponse.json({ error: 'empty message' }, { status: 400 });
   if (!productId && !groupId) return NextResponse.json({ error: 'missing id' }, { status: 400 });
 
-  const session = await getSession();
-  const isAdmin = !!session;
-  const name = isAdmin ? (session.name || '관리자') : (senderName?.trim() || '외부 사용자');
+  // source='external'이면 세션 무관하게 외부 사용자로 처리
+  const session = source === 'external' ? null : await getSession();
+  const isAdmin = source === 'admin' ? !!session : source === 'external' ? false : !!session;
+  const name = isAdmin ? (session?.name || '관리자') : (senderName?.trim() || '외부 사용자');
 
   const db = getDb();
   const id = uuidv4();
