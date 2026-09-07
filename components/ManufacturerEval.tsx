@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import MfrScheduleCalendar from './MfrScheduleCalendar';
 
 interface Props {
   productId: string;
@@ -236,6 +237,11 @@ export default function ManufacturerEval({
                 />
               )}
             </div>
+          )}
+
+          {/* 일정 캘린더 (대상 제품만) */}
+          {target === 'target' && (
+            <MfrScheduleCalendar productId={productId} readOnly={readOnly} />
           )}
 
           {!readOnly && (

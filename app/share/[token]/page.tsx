@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import QATable from '@/components/QATable';
 import ProductNotes from '@/components/ProductNotes';
 import ChatWidget from '@/components/ChatWidget';
+import MfrScheduleCalendar from '@/components/MfrScheduleCalendar';
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -114,6 +115,9 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                       <div className="text-xs font-semibold text-slate-500 mb-1">평가 확인 사항</div>
                       <pre className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100 leading-relaxed">{product.mfr_eval_notes}</pre>
                     </div>
+                  )}
+                  {product.mfr_eval_target === 'target' && (
+                    <MfrScheduleCalendar productId={shareRow.product_id} readOnly={true} />
                   )}
                 </div>
               </div>

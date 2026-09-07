@@ -96,6 +96,15 @@ function initSchema(db: Database.Database) {
   try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_notes TEXT'); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_completed INTEGER NOT NULL DEFAULT 0'); } catch {}
   try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_pg_share_token ON product_groups(share_token) WHERE share_token IS NOT NULL'); } catch {}
+  try { db.exec(`CREATE TABLE IF NOT EXISTS mfr_eval_schedules (
+    id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    date TEXT NOT NULL,
+    am_blocked INTEGER NOT NULL DEFAULT 0,
+    pm_blocked INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(product_id, date)
+  )`); } catch {}
   try { db.exec(`CREATE TABLE IF NOT EXISTS chat_messages (
     id TEXT PRIMARY KEY,
     product_id TEXT,
