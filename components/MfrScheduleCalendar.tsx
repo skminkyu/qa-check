@@ -10,6 +10,7 @@ interface ScheduleEntry {
 interface Props {
   productId: string;
   readOnly?: boolean;
+  collapsible?: boolean;
 }
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -18,13 +19,14 @@ function toDateStr(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-export default function MfrScheduleCalendar({ productId, readOnly = false }: Props) {
+export default function MfrScheduleCalendar({ productId, readOnly = false, collapsible = false }: Props) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [schedules, setSchedules] = useState<Record<string, ScheduleEntry>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [collapsed, setCollapsed] = useState(collapsible);
 
   const fetchSchedules = useCallback(async () => {
     const res = await fetch(`/api/products/${productId}/mfr-schedule`);
@@ -74,10 +76,20 @@ export default function MfrScheduleCalendar({ productId, readOnly = false }: Pro
 
   return (
     <div>
-      <div className="text-xs font-semibold text-slate-500 mb-2">
-        {readOnly ? '관리자 일정 (참고용)' : '일정 등록'}
-      </div>
-      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+      {collapsible ? (
+        <button
+          onClick={() => setCollapsed(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl mb-1 hover:bg-slate-100 transition text-left"
+        >
+          <span className="text-xs font-semibold text-slate-600">관리자 일정 (참고용)</span>
+          <span className="text-slate-400 text-xs">{collapsed ? '▼ 펼치기' : '▲ 접기'}</span>
+        </button>
+      ) : (
+        <div className="text-xs font-semibold text-slate-500 mb-2">
+          {readOnly ? '관리자 일정 (참고용)' : '일정 등록'}
+        </div>
+      )}
+      {collapsed ? null : <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
         {/* Month navigation */}
         <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-200">
           <button
@@ -196,9 +208,9 @@ export default function MfrScheduleCalendar({ productId, readOnly = false }: Pro
             {saving && <span className="text-xs text-slate-400">저장 중...</span>}
           </div>
         )}
-      </div>
+      </div>}
 
-      {!readOnly && (
+      {!readOnly && !collapsed && (
         <p className="text-xs text-slate-400 mt-1.5">날짜를 클릭하여 오전/오후 불가 일정을 등록하세요.</p>
       )}
     </div>

@@ -95,6 +95,7 @@ function initSchema(db: Database.Database) {
   try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_location TEXT'); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_notes TEXT'); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_completed INTEGER NOT NULL DEFAULT 0'); } catch {}
+  try { db.exec('ALTER TABLE products ADD COLUMN mfr_eval_date TEXT'); } catch {}
   try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_pg_share_token ON product_groups(share_token) WHERE share_token IS NOT NULL'); } catch {}
   try { db.exec(`CREATE TABLE IF NOT EXISTS mfr_eval_schedules (
     id TEXT PRIMARY KEY,

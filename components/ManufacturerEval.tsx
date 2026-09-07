@@ -10,6 +10,7 @@ interface Props {
   initialLocation: string | null;
   initialNotes: string | null;
   initialCompleted: boolean;
+  initialEvalDate?: string | null;
   readOnly?: boolean;
 }
 
@@ -72,7 +73,7 @@ function getDefaultNotes(categoryName: string): string {
 
 export default function ManufacturerEval({
   productId, categoryName,
-  initialTarget, initialName, initialLocation, initialNotes, initialCompleted,
+  initialTarget, initialName, initialLocation, initialNotes, initialCompleted, initialEvalDate,
   readOnly = false,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -83,6 +84,7 @@ export default function ManufacturerEval({
   const [location, setLocation] = useState(initialLocation ?? '');
   const [notes, setNotes] = useState(initialNotes ?? '');
   const [completed, setCompleted] = useState(initialCompleted);
+  const [evalDate, setEvalDate] = useState(initialEvalDate ?? '');
   const [saved, setSaved] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,7 +129,7 @@ export default function ManufacturerEval({
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-slate-700">제조사 평가</span>
           {target === 'target' && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">대상</span>}
-          {target === 'target' && completed && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">✓ 완료</span>}
+          {target === 'target' && completed && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">✓ 완료{evalDate ? ` (${evalDate})` : ''}</span>}
           {target === 'non_target' && <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">비대상</span>}
           {mfrName && <span className="text-xs text-slate-400">— {mfrName}</span>}
         </div>
@@ -161,19 +163,39 @@ export default function ManufacturerEval({
                 <span className="text-sm text-slate-700">비대상 (제외/면제)</span>
               </label>
               {target === 'target' && !readOnly && (
-                <label className="flex items-center gap-2 cursor-pointer select-none ml-4 pl-4 border-l border-slate-200">
-                  <input
-                    type="checkbox"
-                    checked={completed}
-                    onChange={() => {
-                      const next = !completed;
-                      setCompleted(next);
-                      save({ completed: next });
-                    }}
-                    className="w-4 h-4 accent-emerald-600"
-                  />
-                  <span className="text-sm font-medium text-emerald-700">완료</span>
-                </label>
+                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-slate-200">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={completed}
+                      onChange={() => {
+                        const next = !completed;
+                        setCompleted(next);
+                        save({ completed: next });
+                      }}
+                      className="w-4 h-4 accent-emerald-600"
+                    />
+                    <span className="text-sm font-medium text-emerald-700">완료</span>
+                  </label>
+                  {completed && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">평가 일자</span>
+                      <input
+                        type="date"
+                        value={evalDate}
+                        onChange={e => {
+                          setEvalDate(e.target.value);
+                          fetch(`/api/products/${productId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mfrEvalDate: e.target.value }),
+                          }).then(() => { setSaved(true); if (saveTimer.current) clearTimeout(saveTimer.current); saveTimer.current = setTimeout(() => setSaved(false), 1500); });
+                        }}
+                        className="border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-300"
+                      />
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

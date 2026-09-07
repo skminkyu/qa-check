@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const session = await getSession();
   if (!session || session.role === 'viewer') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   const { id } = await params;
-  const { name, partnerName, mdName, productNotes, recordingDate, broadcastDate, contactEmail, ccEmail, groupId, mfrEvalTarget, mfrEvalName, mfrEvalLocation, mfrEvalNotes, mfrEvalCompleted } = await req.json();
+  const { name, partnerName, mdName, productNotes, recordingDate, broadcastDate, contactEmail, ccEmail, groupId, mfrEvalTarget, mfrEvalName, mfrEvalLocation, mfrEvalNotes, mfrEvalCompleted, mfrEvalDate } = await req.json();
   const db = getDb();
   if (productNotes !== undefined) {
     db.prepare('UPDATE products SET product_notes=?, updated_at=datetime(\'now\') WHERE id=?').run(productNotes, id);
@@ -44,6 +44,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (mfrEvalTarget !== undefined || mfrEvalName !== undefined || mfrEvalLocation !== undefined || mfrEvalNotes !== undefined || mfrEvalCompleted !== undefined) {
     db.prepare('UPDATE products SET mfr_eval_target=?, mfr_eval_name=?, mfr_eval_location=?, mfr_eval_notes=?, mfr_eval_completed=?, updated_at=datetime(\'now\') WHERE id=?')
       .run(mfrEvalTarget ?? null, mfrEvalName ?? null, mfrEvalLocation ?? null, mfrEvalNotes ?? null, mfrEvalCompleted ? 1 : 0, id);
+  }
+  if (mfrEvalDate !== undefined) {
+    db.prepare('UPDATE products SET mfr_eval_date=?, updated_at=datetime(\'now\') WHERE id=?').run(mfrEvalDate || null, id);
   }
   return NextResponse.json({ ok: true });
 }

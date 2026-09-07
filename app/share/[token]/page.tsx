@@ -116,9 +116,6 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                       <pre className="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 border border-slate-100 leading-relaxed">{product.mfr_eval_notes}</pre>
                     </div>
                   )}
-                  {product.mfr_eval_target === 'target' && (
-                    <MfrScheduleCalendar productId={shareRow.product_id} readOnly={true} />
-                  )}
                 </div>
               </div>
             )}
@@ -126,6 +123,11 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
           </div>
           <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
+          {product.mfr_eval_target === 'target' && (
+            <div className="mt-4">
+              <MfrScheduleCalendar productId={shareRow.product_id} readOnly={true} collapsible={true} />
+            </div>
+          )}
         </div>
       </main>
       <ChatWidget productId={shareRow.product_id} />
