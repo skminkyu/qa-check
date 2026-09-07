@@ -14,7 +14,7 @@ export default async function GroupSharePage({ params }: { params: Promise<{ tok
 
   const products = db.prepare(`
     SELECT p.id, p.name, p.partner_name, p.md_name, p.recording_date, p.broadcast_date, p.product_notes,
-      p.mfr_eval_target, p.mfr_eval_name, p.mfr_eval_location, p.mfr_eval_notes,
+      p.mfr_eval_target, p.mfr_eval_name, p.mfr_eval_location, p.mfr_eval_notes, p.mfr_eval_completed, p.mfr_eval_date,
       c.name as category_name
     FROM products p
     JOIN categories c ON c.id = p.category_id
@@ -23,7 +23,7 @@ export default async function GroupSharePage({ params }: { params: Promise<{ tok
   `).all(group.id) as Array<{
     id: string; name: string; partner_name: string; md_name: string;
     recording_date: string; broadcast_date: string; product_notes: string; category_name: string;
-    mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number;
+    mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number; mfr_eval_date: string | null;
   }>;
 
   const allRecords = products.map(p => {

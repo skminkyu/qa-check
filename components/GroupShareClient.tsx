@@ -2,11 +2,12 @@
 import { useState } from 'react';
 import QATable from '@/components/QATable';
 import ProductNotes from '@/components/ProductNotes';
+import MfrScheduleCalendar from '@/components/MfrScheduleCalendar';
 
 interface Product {
   id: string; name: string; partner_name: string; md_name: string;
   recording_date: string; broadcast_date: string; product_notes: string; category_name: string;
-  mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number;
+  mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number; mfr_eval_date: string | null;
 }
 
 interface RecordRow {
@@ -97,6 +98,9 @@ export default function GroupShareClient({ products, allRecords, groupName }: Pr
               {product.mfr_eval_target === 'target' && !!product.mfr_eval_completed && (
                 <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">✓ 완료</span>
               )}
+              {product.mfr_eval_target === 'target' && product.mfr_eval_date && (
+                <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{product.mfr_eval_date}</span>
+              )}
             </div>
             <div className="px-5 py-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -127,6 +131,11 @@ export default function GroupShareClient({ products, allRecords, groupName }: Pr
           <QATable key={product.id} productId={product.id} initialRecords={records} readOnly={true} />
         </div>
         <ProductNotes key={product.id + '-notes'} productId={product.id} initialNotes={product.product_notes || ''} readOnly={true} />
+        {product.mfr_eval_target === 'target' && (
+          <div className="mt-4">
+            <MfrScheduleCalendar key={product.id + '-sched'} productId={product.id} readOnly={true} collapsible={true} />
+          </div>
+        )}
       </div>
     </main>
   );
