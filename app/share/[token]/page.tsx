@@ -18,7 +18,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     SELECT p.*, c.name as category_name
     FROM products p JOIN categories c ON c.id = p.category_id
     WHERE p.id = ?
-  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string; mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number } | undefined;
+  `).get(shareRow.product_id) as { name: string; category_name: string; partner_name: string; md_name: string; product_notes: string; created_at: string; recording_date: string; broadcast_date: string; mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number; mfr_eval_date: string | null } | undefined;
 
   if (!product) notFound();
 
@@ -93,6 +93,9 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
                   }
                   {product.mfr_eval_target === 'target' && !!product.mfr_eval_completed && (
                     <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">✓ 완료</span>
+                  )}
+                  {product.mfr_eval_target === 'target' && product.mfr_eval_date && (
+                    <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{product.mfr_eval_date}</span>
                   )}
                 </div>
                 <div className="px-5 py-4 space-y-4">
