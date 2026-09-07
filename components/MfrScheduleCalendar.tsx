@@ -26,7 +26,7 @@ export default function MfrScheduleCalendar({ productId, readOnly = false, colla
   const [schedules, setSchedules] = useState<Record<string, ScheduleEntry>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [collapsed, setCollapsed] = useState(collapsible);
+  const [collapsed, setCollapsed] = useState(false);
 
   const fetchSchedules = useCallback(async () => {
     const res = await fetch('/api/admin/schedules');
