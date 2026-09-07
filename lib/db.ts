@@ -106,6 +106,13 @@ function initSchema(db: Database.Database) {
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(product_id, date)
   )`); } catch {}
+  try { db.exec(`CREATE TABLE IF NOT EXISTS admin_schedules (
+    id TEXT PRIMARY KEY,
+    date TEXT UNIQUE NOT NULL,
+    am_blocked INTEGER NOT NULL DEFAULT 0,
+    pm_blocked INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`); } catch {}
   try { db.exec(`CREATE TABLE IF NOT EXISTS chat_messages (
     id TEXT PRIMARY KEY,
     product_id TEXT,

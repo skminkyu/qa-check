@@ -29,14 +29,14 @@ export default function MfrScheduleCalendar({ productId, readOnly = false, colla
   const [collapsed, setCollapsed] = useState(collapsible);
 
   const fetchSchedules = useCallback(async () => {
-    const res = await fetch(`/api/products/${productId}/mfr-schedule`);
+    const res = await fetch('/api/admin/schedules');
     const data = await res.json();
     if (data.schedules) {
       const map: Record<string, ScheduleEntry> = {};
       (data.schedules as ScheduleEntry[]).forEach(s => { map[s.date] = s; });
       setSchedules(map);
     }
-  }, [productId]);
+  }, []);
 
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
@@ -45,7 +45,7 @@ export default function MfrScheduleCalendar({ productId, readOnly = false, colla
     const current = schedules[date] ?? { date, am_blocked: 0, pm_blocked: 0 };
     const updated = { ...current, [field]: current[field] ? 0 : 1 };
     setSaving(true);
-    await fetch(`/api/products/${productId}/mfr-schedule`, {
+    await fetch('/api/admin/schedules', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ date, amBlocked: !!updated.am_blocked, pmBlocked: !!updated.pm_blocked }),
