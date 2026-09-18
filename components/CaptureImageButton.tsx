@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function CaptureImageButton({ targetId, filename = 'QA_체크리스트', productId, shareToken }: Props) {
-  const [status, setStatus] = useState<'idle' | 'capturing' | 'done' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'capturing' | 'done' | 'error' | 'no-token'>('idle');
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -29,7 +29,13 @@ export default function CaptureImageButton({ targetId, filename = 'QA_체크리�
       const res = await fetch(screenshotUrl);
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || res.statusText);
+        const msg = err.error || res.statusText;
+        if (res.status === 400 && msg.includes('share token')) {
+          setStatus('no-token');
+          setTimeout(() => setStatus('idle'), 5000);
+          return;
+        }
+        throw new Error(msg);
       }
       const blob = await res.blob();
 
@@ -72,6 +78,13 @@ export default function CaptureImageButton({ targetId, filename = 'QA_체크리�
       <button disabled className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-red-300 bg-red-50 text-red-600">
         ✕ 오류
       </button>
+    );
+  }
+  if (status === 'no-token') {
+    return (
+      <div className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 max-w-xs">
+        ⚠ 먼저 상품 상세 페이지에서 공유 링크를 생성해주세요.
+      </div>
     );
   }
 
