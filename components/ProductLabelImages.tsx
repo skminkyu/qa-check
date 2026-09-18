@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 const MAX_SLOTS = 8;
 
@@ -38,6 +38,7 @@ export default function ProductLabelImages({ productId, readOnly = false }: Prop
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(true);
   const [saving, setSaving] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; index: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingSlotRef = useRef<number | null>(null);
   const imagesRef = useRef(images);
@@ -107,6 +108,30 @@ export default function ProductLabelImages({ productId, readOnly = false }: Prop
     await fetch(`/api/products/${productId}/label-images?slot=${slot}`, { method: 'DELETE' });
   }
 
+  const openLightbox = useCallback((src: string, index: number) => setLightbox({ src, index }), []);
+  const closeLightbox = useCallback(() => setLightbox(null), []);
+
+  const navigateLightbox = useCallback((dir: 1 | -1) => {
+    setLightbox(prev => {
+      if (!prev) return null;
+      const filled = imagesRef.current.map((img, i) => img ? i : -1).filter(i => i !== -1);
+      const pos = filled.indexOf(prev.index);
+      const next = filled[(pos + dir + filled.length) % filled.length];
+      return { src: imagesRef.current[next]!, index: next };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') navigateLightbox(1);
+      if (e.key === 'ArrowLeft') navigateLightbox(-1);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox, closeLightbox, navigateLightbox]);
+
   function handleSlotClick(slot: number) {
     pendingSlotRef.current = slot;
     if (fileInputRef.current) { fileInputRef.current.value = ''; fileInputRef.current.click(); }
@@ -160,8 +185,8 @@ export default function ProductLabelImages({ productId, readOnly = false }: Prop
                     <img
                       src={img}
                       alt={`표시사항 ${slot + 1}`}
-                      className="w-full h-full object-contain cursor-pointer"
-                      onClick={() => !readOnly && handleSlotClick(slot)}
+                      className="w-full h-full object-contain cursor-zoom-in"
+                      onClick={() => openLightbox(img, slot)}
                     />
                     {!readOnly && (
                       <button
@@ -194,6 +219,44 @@ export default function ProductLabelImages({ productId, readOnly = false }: Prop
               onChange={handleFileChange}
             />
           )}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/85 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-5 text-white text-3xl leading-none hover:text-slate-300 transition"
+          >
+            ✕
+          </button>
+          {images.filter(Boolean).length > 1 && (
+            <>
+              <button
+                onClick={e => { e.stopPropagation(); navigateLightbox(-1); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl leading-none hover:text-slate-300 transition px-2"
+              >
+                ‹
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); navigateLightbox(1); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl leading-none hover:text-slate-300 transition px-2"
+              >
+                ›
+              </button>
+            </>
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightbox.src}
+            alt="확대 보기"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
