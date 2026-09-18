@@ -4,6 +4,7 @@ import QATable from './QATable';
 import ProductNotes from './ProductNotes';
 import ManufacturerEval from './ManufacturerEval';
 import ProductHeader from './ProductHeader';
+import CaptureImageButton from './CaptureImageButton';
 import { QARecord } from './QATable';
 
 interface Product {
@@ -68,7 +69,7 @@ export default function GroupAdminClient({ products, allRecords, groupName, read
       {/* Active product content */}
       <div key={activeTab}>
         {/* Header */}
-        <div className="mb-6">
+        <div className="flex items-start justify-between mb-6">
           <ProductHeader
             productId={activeProduct.id}
             initialName={activeProduct.name}
@@ -82,6 +83,9 @@ export default function GroupAdminClient({ products, allRecords, groupName, read
             createdAt={activeProduct.created_at}
             readOnly={readOnly}
           />
+          <div className="shrink-0 ml-4">
+            <CaptureImageButton targetId="qa-capture-area" filename={activeProduct.name} productId={activeProduct.id} />
+          </div>
         </div>
 
         {/* 제조사 평가 */}
