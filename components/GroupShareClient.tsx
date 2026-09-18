@@ -3,6 +3,7 @@ import { useState } from 'react';
 import QATable from '@/components/QATable';
 import ProductNotes from '@/components/ProductNotes';
 import MfrScheduleCalendar from '@/components/MfrScheduleCalendar';
+import ProductLabelImages from '@/components/ProductLabelImages';
 
 interface Product {
   id: string; name: string; partner_name: string; md_name: string;
@@ -130,6 +131,7 @@ export default function GroupShareClient({ products, allRecords, groupName }: Pr
           <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
           <QATable key={product.id} productId={product.id} initialRecords={records} readOnly={true} />
         </div>
+        <ProductLabelImages key={product.id + '-labels'} productId={product.id} readOnly={true} />
         <ProductNotes key={product.id + '-notes'} productId={product.id} initialNotes={product.product_notes || ''} readOnly={true} />
         {product.mfr_eval_target === 'target' && !product.mfr_eval_completed && (
           <div className="mt-4">

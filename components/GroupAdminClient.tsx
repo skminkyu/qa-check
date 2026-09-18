@@ -5,6 +5,7 @@ import ProductNotes from './ProductNotes';
 import ManufacturerEval from './ManufacturerEval';
 import ProductHeader from './ProductHeader';
 import CaptureImageButton from './CaptureImageButton';
+import ProductLabelImages from './ProductLabelImages';
 import { QARecord } from './QATable';
 
 interface Product {
@@ -106,6 +107,9 @@ export default function GroupAdminClient({ products, allRecords, groupName, read
           <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
           <QATable productId={activeProduct.id} initialRecords={activeRecords} readOnly={readOnly} />
         </div>
+
+        {/* 제품 표시사항 */}
+        <ProductLabelImages productId={activeProduct.id} readOnly={readOnly} />
 
         {/* 제품 메모 */}
         <ProductNotes

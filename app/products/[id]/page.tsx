@@ -13,6 +13,7 @@ import CaptureImageButton from '@/components/CaptureImageButton';
 import ManufacturerEval from '@/components/ManufacturerEval';
 import SendRemindButton from '@/components/SendRemindButton';
 import ChatPanel from '@/components/ChatPanel';
+import ProductLabelImages from '@/components/ProductLabelImages';
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -89,6 +90,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
           <QATable productId={id} initialRecords={records} readOnly={readOnly} />
         </div>
+        <ProductLabelImages productId={id} readOnly={readOnly} />
         <ProductNotes
           productId={id}
           initialNotes={product.product_notes || ''}

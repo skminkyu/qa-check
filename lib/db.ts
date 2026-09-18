@@ -113,6 +113,13 @@ function initSchema(db: Database.Database) {
     pm_blocked INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`); } catch {}
+  try { db.exec(`CREATE TABLE IF NOT EXISTS product_label_images (
+    product_id TEXT NOT NULL,
+    slot_index INTEGER NOT NULL,
+    image_data TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY(product_id, slot_index)
+  )`); } catch {}
   try { db.exec(`CREATE TABLE IF NOT EXISTS chat_messages (
     id TEXT PRIMARY KEY,
     product_id TEXT,

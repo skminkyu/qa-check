@@ -6,6 +6,7 @@ import QATable from '@/components/QATable';
 import ProductNotes from '@/components/ProductNotes';
 import ChatWidget from '@/components/ChatWidget';
 import MfrScheduleCalendar from '@/components/MfrScheduleCalendar';
+import ProductLabelImages from '@/components/ProductLabelImages';
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -125,6 +126,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
             <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
           </div>
+          <ProductLabelImages productId={shareRow.product_id} readOnly={true} />
           <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
           {product.mfr_eval_target === 'target' && !product.mfr_eval_completed && (
             <div className="mt-4">
