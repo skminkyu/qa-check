@@ -126,7 +126,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
           </div>
           <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
-          {product.mfr_eval_target === 'target' && (
+          {product.mfr_eval_target === 'target' && !product.mfr_eval_completed && (
             <div className="mt-4">
               <MfrScheduleCalendar productId={shareRow.product_id} readOnly={true} collapsible={true} />
             </div>

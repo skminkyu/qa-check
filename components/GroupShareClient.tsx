@@ -131,7 +131,7 @@ export default function GroupShareClient({ products, allRecords, groupName }: Pr
           <QATable key={product.id} productId={product.id} initialRecords={records} readOnly={true} />
         </div>
         <ProductNotes key={product.id + '-notes'} productId={product.id} initialNotes={product.product_notes || ''} readOnly={true} />
-        {product.mfr_eval_target === 'target' && (
+        {product.mfr_eval_target === 'target' && !product.mfr_eval_completed && (
           <div className="mt-4">
             <MfrScheduleCalendar key={product.id + '-sched'} productId={product.id} readOnly={true} collapsible={true} />
           </div>
