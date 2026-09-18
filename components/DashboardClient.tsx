@@ -225,7 +225,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
         });
     }
     return list;
-  }, [products, filterCategory, filterPartner, filterMd, sortByProgress]);
+  }, [products, filterCategory, filterPartner, filterMd, filterName, sortByProgress]);
 
   const isFiltered = filterCategory || filterPartner || filterMd || filterName;
 
