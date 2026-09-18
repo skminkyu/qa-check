@@ -175,6 +175,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
   const [filterCategory, setFilterCategory] = useState('');
   const [filterPartner, setFilterPartner] = useState('');
   const [filterMd, setFilterMd] = useState('');
+  const [filterName, setFilterName] = useState('');
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [sortByProgress, setSortByProgress] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -207,10 +208,12 @@ export default function DashboardClient({ products: initialProducts, groups: ini
   const mds = useMemo(() => Array.from(new Set(products.map(p => p.md_name).filter(Boolean))).sort(), [products]);
 
   const filtered = useMemo(() => {
+    const nameLower = filterName.trim().toLowerCase();
     let list = products.filter(p =>
       (!filterCategory || p.category_name === filterCategory) &&
       (!filterPartner || p.partner_name === filterPartner) &&
-      (!filterMd || p.md_name === filterMd)
+      (!filterMd || p.md_name === filterMd) &&
+      (!nameLower || p.name.toLowerCase().includes(nameLower))
     );
     if (sortByProgress) {
       list = list
@@ -224,7 +227,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
     return list;
   }, [products, filterCategory, filterPartner, filterMd, sortByProgress]);
 
-  const isFiltered = filterCategory || filterPartner || filterMd;
+  const isFiltered = filterCategory || filterPartner || filterMd || filterName;
 
   const urgentProducts = useMemo(() => {
     return products
@@ -364,6 +367,15 @@ export default function DashboardClient({ products: initialProducts, groups: ini
           {sortByProgress ? '✓ 진척률 순 (100% 제외)' : '진척률 순 정렬'}
         </button>
 
+        {/* 상품명 검색 */}
+        <input
+          type="text"
+          value={filterName}
+          onChange={e => setFilterName(e.target.value)}
+          placeholder="상품명 검색..."
+          className={`text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-44 ${filterName ? 'border-blue-400 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+        />
+
         {/* 그룹 관리 */}
         <div className="ml-auto flex items-center gap-2">
           {groups.map(g => (
@@ -395,7 +407,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
 
         {(isFiltered || sortByProgress) && (
           <>
-            <button onClick={() => { setFilterCategory(''); setFilterPartner(''); setFilterMd(''); setSortByProgress(false); }}
+            <button onClick={() => { setFilterCategory(''); setFilterPartner(''); setFilterMd(''); setFilterName(''); setSortByProgress(false); }}
               className="text-sm text-slate-500 hover:text-red-500 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 transition">
               초기화
             </button>
@@ -444,6 +456,12 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                             </span>
                           )}
                         </button>
+                        <Link
+                          href={`/groups/${g.id}`}
+                          className="text-xs flex items-center gap-1 px-2.5 py-1 rounded border border-blue-300 bg-white text-blue-600 hover:bg-blue-50 transition shrink-0"
+                        >
+                          📋 그룹 상세보기
+                        </Link>
                         <button
                           onClick={() => copyGroupShare(g.id)}
                           title="그룹 공유 링크 복사"
