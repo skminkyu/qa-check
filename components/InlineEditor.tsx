@@ -148,7 +148,7 @@ export default function InlineEditor({ value, onChange, onBlur, placeholder, rea
   }, [value]);
 
   if (!editor) return null;
-  if (readOnly && !editor.getText().trim()) return null;
+  if (readOnly && !editor.getText().trim() && !editor.getHTML().includes('<img')) return null;
 
   return (
     <div
