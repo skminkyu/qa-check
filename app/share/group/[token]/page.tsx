@@ -26,6 +26,15 @@ export default async function GroupSharePage({ params }: { params: Promise<{ tok
     mfr_eval_target: string | null; mfr_eval_name: string | null; mfr_eval_location: string | null; mfr_eval_notes: string | null; mfr_eval_completed: number; mfr_eval_date: string | null;
   }>;
 
+  const allLabelImages = products.map(p => {
+    const rows = db.prepare(
+      'SELECT slot_index, image_data FROM product_label_images WHERE product_id = ? ORDER BY slot_index'
+    ).all(p.id) as Array<{ slot_index: number; image_data: string }>;
+    const arr: (string | null)[] = Array(8).fill(null);
+    rows.forEach(r => { if (r.slot_index >= 0 && r.slot_index < 8) arr[r.slot_index] = r.image_data; });
+    return { productId: p.id, images: arr };
+  });
+
   const allRecords = products.map(p => {
     const records = db.prepare(`
       SELECT t.id as template_id, t.item_name, t.standard, t.file_url, t.sort_order,
@@ -50,7 +59,7 @@ export default async function GroupSharePage({ params }: { params: Promise<{ tok
         </div>
         <span className="text-xs bg-slate-100 text-slate-500 px-3 py-1 rounded-full">읽기 전용</span>
       </div>
-      <GroupShareClient products={products} allRecords={allRecords} groupName={group.name} />
+      <GroupShareClient products={products} allRecords={allRecords} allLabelImages={allLabelImages} groupName={group.name} />
       <ChatWidget groupId={group.id} />
     </div>
   );

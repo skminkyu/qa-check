@@ -6,6 +6,7 @@ const MAX_SLOTS = 8;
 interface Props {
   productId: string;
   readOnly?: boolean;
+  initialImages?: (string | null)[];
 }
 
 function compressImage(file: File | Blob): Promise<string> {
@@ -33,9 +34,9 @@ function compressImage(file: File | Blob): Promise<string> {
   });
 }
 
-export default function ProductLabelImages({ productId, readOnly = false }: Props) {
-  const [images, setImages] = useState<(string | null)[]>(Array(MAX_SLOTS).fill(null));
-  const [loading, setLoading] = useState(true);
+export default function ProductLabelImages({ productId, readOnly = false, initialImages }: Props) {
+  const [images, setImages] = useState<(string | null)[]>(initialImages ?? Array(MAX_SLOTS).fill(null));
+  const [loading, setLoading] = useState(!initialImages);
   const [open, setOpen] = useState(true);
   const [saving, setSaving] = useState<number | null>(null);
   const [lightbox, setLightbox] = useState<{ src: string; index: number } | null>(null);
@@ -46,6 +47,7 @@ export default function ProductLabelImages({ productId, readOnly = false }: Prop
   useEffect(() => { imagesRef.current = images; }, [images]);
 
   useEffect(() => {
+    if (initialImages) return; // server already provided data
     fetch(`/api/products/${productId}/label-images`)
       .then(r => r.json())
       .then(data => {
@@ -57,7 +59,7 @@ export default function ProductLabelImages({ productId, readOnly = false }: Prop
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [productId]);
+  }, [productId, initialImages]);
 
   useEffect(() => {
     if (readOnly) return;

@@ -23,6 +23,12 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
 
   if (!product) notFound();
 
+  const labelImageRows = db.prepare(
+    'SELECT slot_index, image_data FROM product_label_images WHERE product_id = ? ORDER BY slot_index'
+  ).all(shareRow.product_id) as Array<{ slot_index: number; image_data: string }>;
+  const labelImages: (string | null)[] = Array(8).fill(null);
+  labelImageRows.forEach(r => { if (r.slot_index >= 0 && r.slot_index < 8) labelImages[r.slot_index] = r.image_data; });
+
   function calcDday(dateStr: string): number | null {
     if (!dateStr) return null;
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -126,7 +132,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
             <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
             <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
           </div>
-          <ProductLabelImages productId={shareRow.product_id} readOnly={true} />
+          <ProductLabelImages productId={shareRow.product_id} readOnly={true} initialImages={labelImages} />
           <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
           {product.mfr_eval_target === 'target' && !product.mfr_eval_completed && (
             <div className="mt-4">

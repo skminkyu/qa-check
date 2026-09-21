@@ -19,6 +19,7 @@ interface RecordRow {
 interface Props {
   products: Product[];
   allRecords: Array<{ productId: string; records: RecordRow[] }>;
+  allLabelImages?: Array<{ productId: string; images: (string | null)[] }>;
   groupName: string;
 }
 
@@ -45,7 +46,7 @@ function DdayBadge({ dateStr, label }: { dateStr: string; label: string }) {
   );
 }
 
-export default function GroupShareClient({ products, allRecords, groupName }: Props) {
+export default function GroupShareClient({ products, allRecords, allLabelImages, groupName }: Props) {
   const [activeIdx, setActiveIdx] = useState(0);
 
   if (products.length === 0) {
@@ -131,7 +132,7 @@ export default function GroupShareClient({ products, allRecords, groupName }: Pr
           <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
           <QATable key={product.id} productId={product.id} initialRecords={records} readOnly={true} />
         </div>
-        <ProductLabelImages key={product.id + '-labels'} productId={product.id} readOnly={true} />
+        <ProductLabelImages key={product.id + '-labels'} productId={product.id} readOnly={true} initialImages={allLabelImages?.find(l => l.productId === product.id)?.images} />
         <ProductNotes key={product.id + '-notes'} productId={product.id} initialNotes={product.product_notes || ''} readOnly={true} />
         {product.mfr_eval_target === 'target' && !product.mfr_eval_completed && (
           <div className="mt-4">
