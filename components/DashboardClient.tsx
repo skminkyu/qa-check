@@ -75,8 +75,8 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
   }
 
   return (
-    <tr className={`border-b transition ${inGroup ? 'border-violet-50 bg-violet-50/30 hover:bg-violet-50/60' : 'border-slate-100 hover:bg-slate-50'}`}>
-      <td className={`py-3 font-medium text-slate-800 ${inGroup ? 'pl-10 pr-5' : 'px-5'}`}>
+    <tr className={`border-b transition ${inGroup ? 'border-violet-50 bg-violet-50/20 hover:bg-violet-50/50' : 'border-slate-100 hover:bg-blue-50/20'}`}>
+      <td className={`py-3.5 font-medium text-slate-800 ${inGroup ? 'pl-10 pr-5' : 'px-5'}`}>
         <div className="flex items-center gap-2">
           <span>{p.name}</span>
           {!!unread && (
@@ -115,42 +115,43 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
           </div>
         </div>
       </td>
-      <td className="px-5 py-3 text-slate-600">{p.category_name}</td>
-      <td className="px-5 py-3 text-slate-600">{p.partner_name || '-'}</td>
-      <td className="px-5 py-3 text-slate-600">{p.md_name || '-'}</td>
-      <td className="px-5 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 bg-slate-200 rounded-full h-2 min-w-[80px]">
-            <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+      <td className="px-5 py-3.5 text-xs text-slate-500">{p.category_name}</td>
+      <td className="px-5 py-3.5 text-xs text-slate-500">{p.partner_name || <span className="text-slate-300">—</span>}</td>
+      <td className="px-5 py-3.5 text-xs text-slate-500">{p.md_name || <span className="text-slate-300">—</span>}</td>
+      <td className="px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <div className="flex-1 bg-slate-100 rounded-full h-1.5 min-w-[60px]">
+            <div className="bg-emerald-500 h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
           </div>
-          <span className="text-xs text-slate-500 whitespace-nowrap">{p.done_count}/{p.total_count} ({effectivePct}%)</span>
+          <span className="text-xs text-slate-500 whitespace-nowrap tabular-nums">{effectivePct}%</span>
         </div>
       </td>
-      <td className="px-5 py-3">
+      <td className="px-5 py-3.5">
         <div className="flex flex-col gap-1">
           {p.recording_date ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">🎬</span>
-              <span className="text-xs text-slate-600">{p.recording_date}</span>
+              <span className="text-[10px] text-slate-300">녹화</span>
+              <span className="text-xs text-slate-500 tabular-nums">{p.recording_date}</span>
               <DdayBadge diff={rd} label="" />
             </div>
           ) : null}
           {p.broadcast_date ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">📺</span>
-              <span className="text-xs text-slate-600">{p.broadcast_date}</span>
+              <span className="text-[10px] text-slate-300">송출</span>
+              <span className="text-xs text-slate-500 tabular-nums">{p.broadcast_date}</span>
               <DdayBadge diff={bd} label="" />
             </div>
           ) : null}
-          {!p.recording_date && !p.broadcast_date && <span className="text-xs text-slate-300">-</span>}
+          {!p.recording_date && !p.broadcast_date && <span className="text-xs text-slate-300">—</span>}
         </div>
       </td>
-      <td className="px-5 py-3 text-slate-500 text-xs">{p.created_at.slice(0, 10)}</td>
-      <td className="px-5 py-3">
-        <div className="flex items-center gap-3">
-          <Link href={`/products/${p.id}`} className="text-blue-600 hover:underline text-xs whitespace-nowrap">상세 보기</Link>
+      <td className="px-5 py-3.5 text-xs text-slate-400 tabular-nums">{p.created_at.slice(0, 10)}</td>
+      <td className="px-5 py-3.5">
+        <div className="flex items-center gap-2">
+          <Link href={`/products/${p.id}`} className="text-xs font-medium text-blue-600 hover:text-blue-800 transition whitespace-nowrap">보기</Link>
+          <span className="text-slate-200">|</span>
           <button onClick={() => setConfirmDelete(true)}
-            className="text-slate-300 hover:text-red-400 text-xs transition whitespace-nowrap">삭제</button>
+            className="text-xs text-slate-300 hover:text-red-400 transition whitespace-nowrap">삭제</button>
         </div>
         {confirmDelete && (
           <DeleteModal
@@ -344,37 +345,41 @@ export default function DashboardClient({ products: initialProducts, groups: ini
       )}
 
       {/* Filter bar */}
-      <div className="flex flex-wrap gap-3 mb-4 items-center">
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-          className={`text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white ${filterCategory ? 'border-blue-400 text-blue-700' : 'border-slate-200 text-slate-600'}`}>
-          <option value="">카테고리 전체</option>
-          {categories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select value={filterPartner} onChange={e => setFilterPartner(e.target.value)}
-          className={`text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white ${filterPartner ? 'border-blue-400 text-blue-700' : 'border-slate-200 text-slate-600'}`}>
-          <option value="">협력사 전체</option>
-          {partners.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
-        <select value={filterMd} onChange={e => setFilterMd(e.target.value)}
-          className={`text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white ${filterMd ? 'border-blue-400 text-blue-700' : 'border-slate-200 text-slate-600'}`}>
-          <option value="">MD 전체</option>
-          {mds.map(m => <option key={m} value={m}>{m}</option>)}
-        </select>
-        <button
-          onClick={() => setSortByProgress(v => !v)}
-          className={`text-sm border rounded-lg px-3 py-1.5 transition ${sortByProgress ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-        >
-          {sortByProgress ? '✓ 진척률 순 (100% 제외)' : '진척률 순 정렬'}
-        </button>
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
+        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-1 py-1 shadow-sm">
+          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+            className={`text-xs border-0 bg-transparent px-2 py-1 focus:outline-none cursor-pointer ${filterCategory ? 'text-blue-700 font-semibold' : 'text-slate-500'}`}>
+            <option value="">카테고리 전체</option>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <div className="w-px h-4 bg-slate-200" />
+          <select value={filterPartner} onChange={e => setFilterPartner(e.target.value)}
+            className={`text-xs border-0 bg-transparent px-2 py-1 focus:outline-none cursor-pointer ${filterPartner ? 'text-blue-700 font-semibold' : 'text-slate-500'}`}>
+            <option value="">협력사 전체</option>
+            {partners.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <div className="w-px h-4 bg-slate-200" />
+          <select value={filterMd} onChange={e => setFilterMd(e.target.value)}
+            className={`text-xs border-0 bg-transparent px-2 py-1 focus:outline-none cursor-pointer ${filterMd ? 'text-blue-700 font-semibold' : 'text-slate-500'}`}>
+            <option value="">MD 전체</option>
+            {mds.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
 
-        {/* 상품명 검색 */}
         <input
           type="text"
           value={filterName}
           onChange={e => setFilterName(e.target.value)}
-          placeholder="상품명 검색..."
-          className={`text-sm border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-44 ${filterName ? 'border-blue-400 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+          placeholder="🔍  상품명 검색"
+          className={`text-xs border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300/50 bg-white shadow-sm w-40 ${filterName ? 'border-blue-400 text-blue-700' : 'border-slate-200 text-slate-500'}`}
         />
+
+        <button
+          onClick={() => setSortByProgress(v => !v)}
+          className={`text-xs border rounded-lg px-3 py-2 transition shadow-sm ${sortByProgress ? 'border-blue-400 bg-blue-50 text-blue-700 font-semibold' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
+        >
+          {sortByProgress ? '✓ 진척률 순' : '진척률 순 정렬'}
+        </button>
 
         {/* 그룹 관리 */}
         <div className="ml-auto flex items-center gap-2">
@@ -421,14 +426,14 @@ export default function DashboardClient({ products: initialProducts, groups: ini
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="text-left px-5 py-3 font-semibold text-slate-600">상품명</th>
-              <th className="text-left px-5 py-3 font-semibold text-slate-600">카테고리</th>
-              <th className="text-left px-5 py-3 font-semibold text-slate-600">협력사</th>
-              <th className="text-left px-5 py-3 font-semibold text-slate-600">MD</th>
-              <th className="text-left px-5 py-3 font-semibold text-slate-600">진척률</th>
-              <th className="text-left px-5 py-3 font-semibold text-slate-600">녹화 / 송출</th>
-              <th className="text-left px-5 py-3 font-semibold text-slate-600">등록일</th>
-              <th className="px-5 py-3"></th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">상품명</th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">카테고리</th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">협력사</th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">MD</th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">진척률</th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">녹화 / 송출</th>
+              <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">등록일</th>
+              <th className="px-5 py-3.5"></th>
             </tr>
           </thead>
           <tbody>
@@ -443,8 +448,8 @@ export default function DashboardClient({ products: initialProducts, groups: ini
               const collapsed = collapsedGroups.has(g.id);
               return (
                 <>
-                  <tr key={`group-${g.id}`} className="bg-violet-50 border-b border-violet-100">
-                    <td colSpan={8} className="px-5 py-2.5">
+                  <tr key={`group-${g.id}`} className="bg-violet-50/60 border-b border-violet-100/80">
+                    <td colSpan={8} className="px-5 py-2">
                       <div className="flex items-center gap-2">
                         <button onClick={() => toggleGroup(g.id)} className="flex items-center gap-2 flex-1 text-left">
                           <span className="text-sm">{collapsed ? '▶' : '▼'}</span>
