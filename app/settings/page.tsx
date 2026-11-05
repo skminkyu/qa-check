@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import NavBar from '@/components/NavBar';
+import Sidebar from '@/components/Sidebar';
 import SettingsClient from '@/components/SettingsClient';
 
 export default async function SettingsPage() {
@@ -19,9 +19,10 @@ export default async function SettingsPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <NavBar user={session} />
-      <main className="max-w-4xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar user={session} />
+      <main className="flex-1 pl-52 min-w-0">
+      <div className="max-w-4xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold text-slate-800 mb-8">설정</h1>
         <SettingsClient
           initialCategories={categories}
@@ -29,6 +30,7 @@ export default async function SettingsPage() {
           initialUsers={users}
           userRole={session.role}
         />
+      </div>
       </main>
     </div>
   );

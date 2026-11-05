@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import NavBar from '@/components/NavBar';
+import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
 import DashboardClient from '@/components/DashboardClient';
 import DashboardCalendar from '@/components/DashboardCalendar';
@@ -51,9 +51,10 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <NavBar user={session} />
-      <main className="w-full px-8 py-8 max-w-screen-2xl mx-auto">
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar user={session} />
+      <main className="flex-1 pl-52 min-w-0">
+      <div className="w-full px-8 py-8 max-w-screen-2xl">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-slate-800">대시보드</h1>
           <Link href="/products/new" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
@@ -66,15 +67,18 @@ export default async function DashboardPage() {
           <div className="flex-1 min-w-0">
             <DashboardCalendar products={products} />
           </div>
-          <div className="flex flex-col gap-4 w-56 shrink-0">
+          <div className="flex flex-col gap-3 w-52 shrink-0">
             {[
-              { label: '전체 상품', value: stats.total, accent: 'border-l-slate-500' },
-              { label: 'QA 완료', value: stats.completed, accent: 'border-l-emerald-500' },
-              { label: '진행 중', value: stats.inProgress, accent: 'border-l-blue-500' },
+              { label: '전체 상품', value: stats.total, numColor: 'text-slate-800', dotColor: 'bg-slate-400' },
+              { label: 'QA 완료', value: stats.completed, numColor: 'text-emerald-600', dotColor: 'bg-emerald-500' },
+              { label: '진행 중', value: stats.inProgress, numColor: 'text-blue-600', dotColor: 'bg-blue-500' },
             ].map(s => (
-              <div key={s.label} className={`bg-white rounded-xl p-5 shadow-sm border border-slate-100 border-l-4 ${s.accent}`}>
-                <div className="text-sm text-slate-500 mb-1">{s.label}</div>
-                <div className="text-4xl font-bold text-slate-800">{s.value}</div>
+              <div key={s.label} className="bg-white rounded-xl px-5 py-4 shadow-sm border border-slate-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-2 h-2 rounded-full ${s.dotColor}`} />
+                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{s.label}</div>
+                </div>
+                <div className={`text-3xl font-extrabold ${s.numColor}`}>{s.value}</div>
               </div>
             ))}
           </div>
@@ -82,6 +86,7 @@ export default async function DashboardPage() {
 
         {/* Product list with filters */}
         <DashboardClient products={products} groups={groups} />
+      </div>
       </main>
     </div>
   );

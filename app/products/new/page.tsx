@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import NavBar from '@/components/NavBar';
+import Sidebar from '@/components/Sidebar';
 
 interface Category { id: string; name: string; }
 interface User { name: string; role: string; }
@@ -37,9 +37,10 @@ export default function NewProductPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <NavBar user={user} />
-      <main className="max-w-xl mx-auto px-6 py-10">
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar user={user} />
+      <main className="flex-1 pl-52 min-w-0">
+      <div className="max-w-xl mx-auto px-6 py-10">
         <h1 className="text-xl font-bold text-slate-800 mb-6">상품 등록</h1>
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-5">
           <div>
@@ -76,6 +77,7 @@ export default function NewProductPage() {
             </button>
           </div>
         </form>
+      </div>
       </main>
     </div>
   );

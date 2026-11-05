@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { redirect, notFound } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import NavBar from '@/components/NavBar';
+import Sidebar from '@/components/Sidebar';
 import Link from 'next/link';
 import GroupAdminClient from '@/components/GroupAdminClient';
 
@@ -50,9 +50,10 @@ export default async function GroupAdminPage({ params }: { params: Promise<{ id:
   const readOnly = session.role === 'viewer';
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <NavBar user={session} />
-      <main className="w-full px-6 py-8 max-w-screen-2xl mx-auto">
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar user={session} />
+      <main className="flex-1 pl-52 min-w-0">
+      <div className="w-full px-6 py-8 max-w-screen-2xl">
         <div className="flex items-center gap-3 mb-6">
           <Link href="/dashboard" className="text-slate-400 hover:text-slate-600 text-sm transition">← 대시보드</Link>
           <span className="text-slate-300">/</span>
@@ -67,6 +68,7 @@ export default async function GroupAdminPage({ params }: { params: Promise<{ id:
         ) : (
           <GroupAdminClient products={products} allRecords={allRecords} groupName={group.name} readOnly={readOnly} />
         )}
+      </div>
       </main>
     </div>
   );
