@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { redirect, notFound } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import NavBar from '@/components/NavBar';
+import Sidebar from '@/components/Sidebar';
 import QATable from '@/components/QATable';
 import ShareButton from '@/components/ShareButton';
 import ProductNotes from '@/components/ProductNotes';
@@ -46,9 +46,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const readOnly = session.role === 'viewer';
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <NavBar user={session} />
-      <main className="w-full px-4 py-8">
+    <div className="min-h-screen bg-slate-50 flex">
+      <Sidebar user={session} />
+      <main className="flex-1 pl-52 min-w-0 px-6 py-8">
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <ProductHeader
@@ -100,4 +100,5 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       </main>
     </div>
   );
+
 }
