@@ -281,7 +281,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                   {r.standard && (
                     <div className="mb-2">
                       <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">기준</div>
-                      <div className="text-xs text-slate-700 bg-blue-50/60 border border-blue-100 border-l-2 border-l-blue-400 rounded-r-md px-3 py-2 whitespace-pre-wrap leading-relaxed">{r.standard}</div>
+                      <div className="text-xs font-semibold text-slate-800 bg-blue-50/60 border border-blue-100 border-l-2 border-l-blue-400 rounded-r-md px-3 py-2 whitespace-pre-wrap leading-relaxed">{r.standard}</div>
                     </div>
                   )}
                   {r.file_url && (
