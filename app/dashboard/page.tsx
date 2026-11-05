@@ -83,13 +83,8 @@ export default async function DashboardPage() {
           ))}
         </div>
 
-        {/* 캘린더 */}
-        <div className="mb-6">
-          <DashboardCalendar products={products} />
-        </div>
-
-        {/* Product list with filters */}
-        <DashboardClient products={products} groups={groups} />
+        {/* Product list with filters + calendar inside */}
+        <DashboardClient products={products} groups={groups} calendarProducts={products} />
       </div>
       </main>
     </div>

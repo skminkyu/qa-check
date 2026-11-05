@@ -1,6 +1,8 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+const DashboardCalendar = dynamic(() => import('./DashboardCalendar'), { ssr: false });
 
 function DeleteModal({ productName, onConfirm, onCancel }: { productName: string; onConfirm: () => void; onCancel: () => void }) {
   return (
@@ -29,11 +31,12 @@ interface Product {
   group_id: string | null; group_name: string | null;
   done_count: number; progress_count: number; hold_count: number; na_count: number; total_count: number;
   created_at: string; recording_date: string; broadcast_date: string;
+  hidden?: number;
 }
 
 interface Group { id: string; name: string; share_token?: string | null; }
 
-interface Props { products: Product[]; groups: Group[]; }
+interface Props { products: Product[]; groups: Group[]; calendarProducts?: Product[]; }
 
 function calcDday(dateStr: string): number | null {
   if (!dateStr) return null;
@@ -54,7 +57,7 @@ function DdayBadge({ diff, label }: { diff: number | null; label: string }) {
   );
 }
 
-function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void; onDelete: (productId: string) => void; inGroup?: boolean; unread?: number }) {
+function ProductRow({ p, groups, onGroupChange, onDelete, onHide, inGroup, unread }: { p: Product; groups: Group[]; onGroupChange: (productId: string, groupId: string | null) => void; onDelete: (productId: string) => void; onHide: (productId: string, hidden: boolean) => void; inGroup?: boolean; unread?: number }) {
   const [showGroupMenu, setShowGroupMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -75,7 +78,7 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
   }
 
   return (
-    <tr className={`border-b transition ${inGroup ? 'border-slate-100 bg-slate-50/50 hover:bg-slate-50' : 'border-slate-100 hover:bg-slate-50/80'}`}>
+    <tr className={`border-b transition ${p.hidden ? 'opacity-50 bg-slate-50/80' : inGroup ? 'border-slate-100 bg-slate-50/50 hover:bg-slate-50' : 'border-slate-100 hover:bg-slate-50/80'}`}>
       <td className={`py-3.5 font-medium text-slate-800 ${inGroup ? 'pl-10 pr-5' : 'px-5'}`}>
         <div className="flex items-center gap-2">
           <span>{p.name}</span>
@@ -147,11 +150,16 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
       </td>
       <td className="px-5 py-3.5 text-xs text-slate-400 tabular-nums">{p.created_at.slice(0, 10)}</td>
       <td className="px-5 py-3.5">
-        <div className="flex items-center gap-2">
-          <Link href={`/products/${p.id}`} className="text-xs font-medium text-blue-600 hover:text-blue-800 transition whitespace-nowrap">보기</Link>
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <Link href={`/products/${p.id}`} className="text-xs font-medium text-blue-600 hover:text-blue-800 transition">보기</Link>
+          <span className="text-slate-200">|</span>
+          <button
+            onClick={() => onHide(p.id, !p.hidden)}
+            className={`text-xs transition ${p.hidden ? 'text-amber-500 hover:text-amber-700 font-semibold' : 'text-slate-300 hover:text-slate-500'}`}
+          >{p.hidden ? '숨김해제' : '숨기기'}</button>
           <span className="text-slate-200">|</span>
           <button onClick={() => setConfirmDelete(true)}
-            className="text-xs text-slate-300 hover:text-red-400 transition whitespace-nowrap">삭제</button>
+            className="text-xs text-slate-300 hover:text-red-400 transition">삭제</button>
         </div>
         {confirmDelete && (
           <DeleteModal
@@ -170,13 +178,14 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
   );
 }
 
-export default function DashboardClient({ products: initialProducts, groups: initialGroups }: Props) {
+export default function DashboardClient({ products: initialProducts, groups: initialGroups, calendarProducts }: Props) {
   const [products, setProducts] = useState(initialProducts);
   const [groups, setGroups] = useState(initialGroups);
   const [filterCategory, setFilterCategory] = useState('');
   const [filterPartner, setFilterPartner] = useState('');
   const [filterMd, setFilterMd] = useState('');
   const [filterName, setFilterName] = useState('');
+  const [showHidden, setShowHidden] = useState(false);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [sortByProgress, setSortByProgress] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -214,7 +223,8 @@ export default function DashboardClient({ products: initialProducts, groups: ini
       (!filterCategory || p.category_name === filterCategory) &&
       (!filterPartner || p.partner_name === filterPartner) &&
       (!filterMd || p.md_name === filterMd) &&
-      (!nameLower || p.name.toLowerCase().includes(nameLower))
+      (!nameLower || p.name.toLowerCase().includes(nameLower)) &&
+      (showHidden || !p.hidden)
     );
     if (sortByProgress) {
       list = list
@@ -228,7 +238,8 @@ export default function DashboardClient({ products: initialProducts, groups: ini
     return list;
   }, [products, filterCategory, filterPartner, filterMd, filterName, sortByProgress]);
 
-  const isFiltered = filterCategory || filterPartner || filterMd || filterName;
+  const isFiltered = filterCategory || filterPartner || filterMd || filterName || showHidden;
+  const hiddenCount = products.filter(p => p.hidden).length;
 
   const urgentProducts = useMemo(() => {
     return products
@@ -251,6 +262,15 @@ export default function DashboardClient({ products: initialProducts, groups: ini
 
   function handleDelete(productId: string) {
     setProducts(prev => prev.filter(p => p.id !== productId));
+  }
+
+  async function handleHide(productId: string, hidden: boolean) {
+    await fetch(`/api/products/${productId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hidden }),
+    });
+    setProducts(prev => prev.map(p => p.id === productId ? { ...p, hidden: hidden ? 1 : 0 } : p));
   }
 
   function handleGroupChange(productId: string, groupId: string | null) {
@@ -319,33 +339,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
 
   return (
     <>
-      {/* 알림창 */}
-      {urgentProducts.length > 0 && !alertDismissed && (
-        <div className="mb-6 bg-white border border-red-100 border-l-4 border-l-red-500 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="font-bold text-slate-800 text-sm">마감 임박 {urgentProducts.length}건</span>
-              <span className="text-xs text-slate-400">— 오늘 기준 빠른 처리 필요</span>
-            </div>
-            <button onClick={() => setAlertDismissed(true)} className="text-slate-300 hover:text-slate-500 text-xs transition">✕ 닫기</button>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {urgentProducts.map(p => (
-              <div key={p.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
-                <Link href={`/products/${p.id}`} className="font-medium text-slate-800 text-sm hover:text-blue-600 hover:underline flex-1 truncate">{p.name}</Link>
-                <span className="text-xs text-slate-400">{p.category_name}</span>
-                <div className="flex gap-1.5">
-                  {p.rdiff !== null && <DdayBadge diff={p.rdiff} label="녹화" />}
-                  {p.bdiff !== null && <DdayBadge diff={p.bdiff} label="송출" />}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Filter bar */}
+      {/* 필터 + 검색 (캘린더 위) */}
       <div className="flex flex-wrap gap-2 mb-4 items-center">
         <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-1 py-1 shadow-sm">
           <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
@@ -382,6 +376,15 @@ export default function DashboardClient({ products: initialProducts, groups: ini
           {sortByProgress ? '✓ 진척률 순' : '진척률 순 정렬'}
         </button>
 
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setShowHidden(v => !v)}
+            className={`text-xs border rounded-lg px-3 py-2 transition shadow-sm ${showHidden ? 'border-amber-400 bg-amber-50 text-amber-700 font-semibold' : 'border-slate-200 bg-white text-slate-400 hover:bg-slate-50'}`}
+          >
+            {showHidden ? `✓ 숨긴 제품 포함 (${hiddenCount})` : `숨긴 제품 보기 (${hiddenCount})`}
+          </button>
+        )}
+
         {/* 그룹 관리 */}
         <div className="ml-auto flex items-center gap-2">
           {groups.map(g => (
@@ -401,7 +404,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                 className="text-xs border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300/50 w-32"
               />
               <button onClick={createGroup} className="text-xs bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-500 transition font-medium">추가</button>
-              <button onClick={() => setShowGroupCreate(false)} className="text-sm text-slate-400 hover:text-slate-600 transition">취소</button>
+              <button onClick={() => setShowGroupCreate(false)} className="text-xs text-slate-400 hover:text-slate-600 transition">취소</button>
             </div>
           ) : (
             <button onClick={() => setShowGroupCreate(true)}
@@ -413,14 +416,46 @@ export default function DashboardClient({ products: initialProducts, groups: ini
 
         {(isFiltered || sortByProgress) && (
           <>
-            <button onClick={() => { setFilterCategory(''); setFilterPartner(''); setFilterMd(''); setFilterName(''); setSortByProgress(false); }}
-              className="text-sm text-slate-500 hover:text-red-500 border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50 transition">
+            <button onClick={() => { setFilterCategory(''); setFilterPartner(''); setFilterMd(''); setFilterName(''); setSortByProgress(false); setShowHidden(false); }}
+              className="text-xs text-slate-500 hover:text-red-500 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50 transition bg-white shadow-sm">
               초기화
             </button>
             <span className="text-xs text-slate-400">{filtered.length}개 표시 중</span>
           </>
         )}
       </div>
+
+      {/* 캘린더 */}
+      <div className="mb-6">
+        <DashboardCalendar products={calendarProducts || products} />
+      </div>
+
+      {/* 알림창 */}
+      {urgentProducts.length > 0 && !alertDismissed && (
+        <div className="mb-6 bg-white border border-red-100 border-l-4 border-l-red-500 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="font-bold text-slate-800 text-sm">마감 임박 {urgentProducts.length}건</span>
+              <span className="text-xs text-slate-400">— 오늘 기준 빠른 처리 필요</span>
+            </div>
+            <button onClick={() => setAlertDismissed(true)} className="text-slate-300 hover:text-slate-500 text-xs transition">✕ 닫기</button>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {urgentProducts.map(p => (
+              <div key={p.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
+                <Link href={`/products/${p.id}`} className="font-medium text-slate-800 text-sm hover:text-blue-600 hover:underline flex-1 truncate">{p.name}</Link>
+                <span className="text-xs text-slate-400">{p.category_name}</span>
+                <div className="flex gap-1.5">
+                  {p.rdiff !== null && <DdayBadge diff={p.rdiff} label="녹화" />}
+                  {p.bdiff !== null && <DdayBadge diff={p.bdiff} label="송출" />}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
 
       {/* Product list */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -479,7 +514,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                     </td>
                   </tr>
                   {!collapsed && gProducts.map(p => (
-                    <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} inGroup unread={unreadProducts[p.id]} />
+                    <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} onHide={handleHide} inGroup unread={unreadProducts[p.id]} />
                   ))}
                 </>
               );
@@ -492,7 +527,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
               </td></tr>
             )}
             {groupedProducts.ungrouped.map(p => (
-              <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} unread={unreadProducts[p.id]} />
+              <ProductRow key={p.id} p={p} groups={groups} onGroupChange={handleGroupChange} onDelete={handleDelete} onHide={handleHide} unread={unreadProducts[p.id]} />
             ))}
           </tbody>
         </table>
