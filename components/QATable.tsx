@@ -8,10 +8,10 @@ const STATUSES = ['미완료', '진행중', '완료', '해당없음', '보류'];
 
 const STATUS_STYLE: Record<string, string> = {
   '완료': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  '진행중': 'bg-blue-50 text-blue-700 border-blue-200',
-  '보류': 'bg-amber-50 text-amber-700 border-amber-200',
+  '진행중': 'bg-blue-50 text-blue-600 border-blue-200',
+  '보류': 'bg-amber-50 text-amber-600 border-amber-200',
   '해당없음': 'bg-slate-100 text-slate-400 border-slate-200',
-  '미완료': 'bg-rose-50 text-rose-600 border-rose-200',
+  '미완료': 'bg-red-50 text-red-500 border-red-200',
 };
 
 export interface QARecord {
@@ -162,7 +162,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
             <col style={{ width: '30%' }} />
             <col style={{ width: '7rem' }} />
           </colgroup>
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-[#f8fafc] border-b border-slate-200">
             <tr>
               <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">#</th>
               <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">QA 항목</th>
@@ -224,7 +224,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
           </thead>
           <tbody>
             {displayed.map((r, i) => (
-              <tr key={r.template_id} className="border-b border-slate-100 hover:bg-blue-50/30 transition align-top group">
+              <tr key={r.template_id} className="border-b border-slate-100 hover:bg-slate-50 transition align-top group">
                 <td className="px-3 py-4 text-xs text-slate-400 font-mono">{i + 1}</td>
                 <td className="px-3 py-4 font-medium text-slate-800 text-xs leading-relaxed">{r.item_name}</td>
 
@@ -279,7 +279,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                 {/* 기준 및 QA 의견 */}
                 <td className="px-3 py-4">
                   {r.standard && (
-                    <div className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5 mb-2 whitespace-pre-wrap leading-relaxed">{r.standard}</div>
+                    <div className="text-xs text-slate-600 bg-slate-50 border-l-2 border-blue-400 rounded-r-md px-3 py-2 mb-2 whitespace-pre-wrap leading-relaxed">{r.standard}</div>
                   )}
                   {r.file_url && (
                     <a href={r.file_url} download className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded-md px-2.5 py-1 mb-2 transition">
