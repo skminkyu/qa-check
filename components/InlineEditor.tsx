@@ -106,6 +106,7 @@ export default function InlineEditor({ value, onChange, onBlur, placeholder, rea
     ],
     content: value || '',
     editable: !readOnly,
+    enableInputRules: false,
     editorProps: {
       attributes: { class: 'focus:outline-none' },
       handlePaste(view, event) {

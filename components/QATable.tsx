@@ -7,11 +7,11 @@ const InlineEditor = dynamic(() => import('./InlineEditor'), { ssr: false });
 const STATUSES = ['미완료', '진행중', '완료', '해당없음', '보류'];
 
 const STATUS_STYLE: Record<string, string> = {
-  '완료': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  '진행중': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  '보류': 'bg-amber-100 text-amber-800 border-amber-200',
-  '해당없음': 'bg-gray-100 text-gray-500 border-gray-200',
-  '미완료': 'bg-red-100 text-red-700 border-red-200',
+  '완료': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  '진행중': 'bg-blue-50 text-blue-700 border-blue-200',
+  '보류': 'bg-amber-50 text-amber-700 border-amber-200',
+  '해당없음': 'bg-slate-100 text-slate-400 border-slate-200',
+  '미완료': 'bg-rose-50 text-rose-600 border-rose-200',
 };
 
 export interface QARecord {
@@ -122,12 +122,12 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
   return (
     <div>
       {/* Progress summary */}
-      <div className="mb-4 flex items-center gap-4">
-        <div className="flex-1 bg-slate-200 rounded-full h-3">
-          <div className="bg-emerald-500 h-3 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+      <div className="mb-5 flex items-center gap-4">
+        <div className="flex-1 bg-slate-100 rounded-full h-2.5">
+          <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
         </div>
-        <span className="text-sm font-semibold text-slate-700">{done}/{records.length} 완료 ({pct}%)</span>
-        <div className="flex gap-2 text-xs">
+        <span className="text-sm font-bold text-slate-700 whitespace-nowrap">{done}/{records.length} 완료 ({pct}%)</span>
+        <div className="flex gap-1.5 text-xs flex-wrap">
           {STATUSES.map(s => {
             const cnt = records.filter(r => r.status === s).length;
             if (cnt === 0) return null;
@@ -136,22 +136,22 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
               <button
                 key={s}
                 onClick={() => toggleStatusFilter(s)}
-                className={`px-2 py-0.5 rounded-full border transition cursor-pointer ${STATUS_STYLE[s]} ${active ? 'ring-2 ring-offset-1 ring-slate-400 font-bold' : 'opacity-70 hover:opacity-100'}`}
+                className={`px-2.5 py-0.5 rounded-full border font-medium transition ${STATUS_STYLE[s]} ${active ? 'ring-2 ring-offset-1 ring-slate-400' : 'opacity-80 hover:opacity-100'}`}
               >
                 {active ? '✓ ' : ''}{s} {cnt}
               </button>
             );
           })}
           {filterStatuses.size > 0 && (
-            <button onClick={() => setFilterStatuses(new Set())} className="px-2 py-0.5 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-100 transition">
-              전체 보기
+            <button onClick={() => setFilterStatuses(new Set())} className="px-2.5 py-0.5 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 transition">
+              전체
             </button>
           )}
         </div>
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-slate-200 overflow-x-auto">
+      <div className="rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
         <table className="w-full text-sm table-fixed">
           <colgroup>
             <col style={{ width: '2.5rem' }} />
@@ -164,10 +164,10 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
           </colgroup>
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              <th className="text-left px-3 py-3 font-semibold text-slate-600">#</th>
-              <th className="text-left px-3 py-3 font-semibold text-slate-600">QA 항목</th>
+              <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">#</th>
+              <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">QA 항목</th>
               {/* 상태 헤더 - 다중 필터 드롭다운 */}
-              <th className="text-left px-3 py-3 font-semibold text-slate-600">
+              <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setStatusDropdownOpen(o => !o)}
@@ -206,7 +206,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                 </div>
               </th>
               {/* 완료 예정일 헤더 - 정렬 */}
-              <th className="text-left px-3 py-3 font-semibold text-slate-600">
+              <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">
                 <button
                   onClick={toggleDueDateSort}
                   className="flex items-center gap-1 hover:text-blue-600 transition"
@@ -217,21 +217,21 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                   </span>
                 </button>
               </th>
-              <th className="text-left px-3 py-3 font-semibold text-slate-600">QA 확인 사항</th>
-              <th className="text-left px-3 py-3 font-semibold text-slate-600">기준 및 QA 의견</th>
-              <th className="text-left px-3 py-3 font-semibold text-slate-600 text-xs">수정 시간</th>
+              <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">QA 확인 사항</th>
+              <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">기준 및 QA 의견</th>
+              <th className="text-left px-3 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">수정 시간</th>
             </tr>
           </thead>
           <tbody>
             {displayed.map((r, i) => (
-              <tr key={r.template_id} className="border-b border-slate-100 hover:bg-slate-50 transition align-top">
-                <td className="px-3 py-3 text-slate-400 text-xs">{i + 1}</td>
-                <td className="px-3 py-3 font-medium text-slate-800 text-xs leading-snug">{r.item_name}</td>
+              <tr key={r.template_id} className="border-b border-slate-100 hover:bg-blue-50/30 transition align-top group">
+                <td className="px-3 py-4 text-xs text-slate-400 font-mono">{i + 1}</td>
+                <td className="px-3 py-4 font-medium text-slate-800 text-xs leading-relaxed">{r.item_name}</td>
 
                 {/* 상태 */}
-                <td className="px-3 py-3">
+                <td className="px-3 py-4">
                   {readOnly ? (
-                    <span className={`px-2 py-1 rounded-full border text-xs font-medium ${STATUS_STYLE[r.status || '미완료']}`}>
+                    <span className={`px-2.5 py-1 rounded-md border text-xs font-semibold ${STATUS_STYLE[r.status || '미완료']}`}>
                       {r.status || '미완료'}
                     </span>
                   ) : (
@@ -242,7 +242,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                         updateRecord(r.template_id, { status: newStatus });
                         save(r.template_id, { status: newStatus });
                       }}
-                      className={`text-xs font-medium px-1.5 py-1 rounded-lg border focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer w-full ${STATUS_STYLE[r.status || '미완료']}`}
+                      className={`text-xs font-semibold px-2 py-1.5 rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-400/50 cursor-pointer w-full ${STATUS_STYLE[r.status || '미완료']}`}
                     >
                       {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -250,7 +250,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                 </td>
 
                 {/* 완료 예정일 */}
-                <td className="px-3 py-3">
+                <td className="px-3 py-4">
                   {readOnly ? (
                     <span className="text-xs text-slate-600">{r.due_date || ''}</span>
                   ) : (
@@ -259,13 +259,13 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                       value={r.due_date || ''}
                       onChange={e => updateRecord(r.template_id, { due_date: e.target.value })}
                       onBlur={() => save(r.template_id)}
-                      className="text-xs border border-slate-200 rounded px-1.5 py-1 w-full focus:outline-none focus:ring-1 focus:ring-blue-300 text-slate-700 bg-transparent"
+                      className="text-xs border border-slate-200 rounded-md px-2 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-blue-300/50 text-slate-700 bg-transparent"
                     />
                   )}
                 </td>
 
                 {/* QA 확인 사항 */}
-                <td className="px-3 py-3">
+                <td className="px-3 py-4">
                   <InlineEditor
                     value={r.qa_notes || ''}
                     onChange={v => updateRecord(r.template_id, { qa_notes: v })}
@@ -277,12 +277,12 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                 </td>
 
                 {/* 기준 및 QA 의견 */}
-                <td className="px-3 py-3">
+                <td className="px-3 py-4">
                   {r.standard && (
-                    <div className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-1.5 whitespace-pre-wrap">{r.standard}</div>
+                    <div className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5 mb-2 whitespace-pre-wrap leading-relaxed">{r.standard}</div>
                   )}
                   {r.file_url && (
-                    <a href={r.file_url} download className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded px-2 py-0.5 mb-1.5 transition">
+                    <a href={r.file_url} download className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 rounded-md px-2.5 py-1 mb-2 transition">
                       ⬇ {r.file_url.split('/').pop()}
                     </a>
                   )}
@@ -297,11 +297,11 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                 </td>
 
                 {/* 수정 시간 */}
-                <td className="px-3 py-3">
+                <td className="px-3 py-4">
                   {saving === r.template_id ? (
-                    <span className="text-xs text-blue-400 animate-pulse">저장중...</span>
+                    <span className="text-xs text-blue-500 animate-pulse">저장 중…</span>
                   ) : r.updated_at ? (
-                    <span className="text-xs text-slate-400">{r.updated_at.slice(0, 16).replace('T', ' ')}</span>
+                    <span className="text-xs text-slate-400 tabular-nums">{r.updated_at.slice(0, 16).replace('T', ' ')}</span>
                   ) : null}
                 </td>
               </tr>
