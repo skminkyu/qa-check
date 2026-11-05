@@ -193,6 +193,7 @@ export default function DashboardClient({ products: initialProducts, groups: ini
   const [showGroupCreate, setShowGroupCreate] = useState(false);
   const [unreadProducts, setUnreadProducts] = useState<Record<string, number>>({});
   const [unreadGroups, setUnreadGroups] = useState<Record<string, number>>({});
+  const [showGroupsDropdown, setShowGroupsDropdown] = useState(false);
 
   useEffect(() => {
     async function fetchUnread() {
@@ -385,32 +386,54 @@ export default function DashboardClient({ products: initialProducts, groups: ini
           </button>
         )}
 
-        {/* 그룹 관리 */}
-        <div className="ml-auto flex items-center gap-2">
-          {groups.map(g => (
-            <span key={g.id} className="inline-flex items-center gap-1 text-xs bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded-md font-medium">
-              {g.name}
-              <button onClick={() => deleteGroup(g.id)} className="text-slate-300 hover:text-red-400 ml-0.5 transition">✕</button>
-            </span>
-          ))}
-          {showGroupCreate ? (
-            <div className="flex items-center gap-1.5">
-              <input
-                autoFocus
-                value={newGroupName}
-                onChange={e => setNewGroupName(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') createGroup(); if (e.key === 'Escape') setShowGroupCreate(false); }}
-                placeholder="그룹 이름"
-                className="text-xs border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300/50 w-32"
-              />
-              <button onClick={createGroup} className="text-xs bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-500 transition font-medium">추가</button>
-              <button onClick={() => setShowGroupCreate(false)} className="text-xs text-slate-400 hover:text-slate-600 transition">취소</button>
+        {/* 그룹 보기 드롭다운 */}
+        <div className="relative ml-auto">
+          <button
+            onClick={() => setShowGroupsDropdown(v => !v)}
+            className={`text-xs border rounded-lg px-3 py-2 transition shadow-sm flex items-center gap-1.5 ${showGroupsDropdown ? 'border-blue-400 bg-blue-50 text-blue-700 font-semibold' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
+          >
+            📁 그룹 보기{groups.length > 0 ? ` (${groups.length})` : ''}
+            <span className="text-slate-400 text-[10px]">{showGroupsDropdown ? '▲' : '▼'}</span>
+          </button>
+          {showGroupsDropdown && (
+            <div className="absolute top-full right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 w-72 overflow-hidden">
+              {groups.length > 0 && (
+                <div className="py-1">
+                  {groups.map(g => (
+                    <div key={g.id} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition">
+                      <span className="flex-1 text-sm font-medium text-slate-700 truncate">{g.name}</span>
+                      <Link href={`/groups/${g.id}`} onClick={() => setShowGroupsDropdown(false)}
+                        className="text-xs text-blue-600 hover:text-blue-800 transition">상세</Link>
+                      <button onClick={() => copyGroupShare(g.id)} title="공유 링크 복사"
+                        className="text-xs text-violet-500 hover:text-violet-700 transition">🔗</button>
+                      <button onClick={() => deleteGroup(g.id)}
+                        className="text-slate-300 hover:text-red-400 transition text-xs">✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className={`${groups.length > 0 ? 'border-t border-slate-100' : ''} px-3 py-2`}>
+                {showGroupCreate ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      autoFocus
+                      value={newGroupName}
+                      onChange={e => setNewGroupName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') createGroup(); if (e.key === 'Escape') setShowGroupCreate(false); }}
+                      placeholder="그룹 이름"
+                      className="text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300/50 flex-1"
+                    />
+                    <button onClick={createGroup} className="text-xs bg-blue-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-blue-500 transition font-medium">추가</button>
+                    <button onClick={() => setShowGroupCreate(false)} className="text-xs text-slate-400 hover:text-slate-600 transition">취소</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setShowGroupCreate(true)}
+                    className="text-xs text-blue-600 hover:text-blue-800 transition font-medium w-full text-left py-0.5">
+                    + 그룹 만들기
+                  </button>
+                )}
+              </div>
             </div>
-          ) : (
-            <button onClick={() => setShowGroupCreate(true)}
-              className="text-xs border border-slate-200 text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition font-medium shadow-sm bg-white">
-              + 그룹 만들기
-            </button>
           )}
         </div>
 
@@ -423,11 +446,6 @@ export default function DashboardClient({ products: initialProducts, groups: ini
             <span className="text-xs text-slate-400">{filtered.length}개 표시 중</span>
           </>
         )}
-      </div>
-
-      {/* 캘린더 */}
-      <div className="mb-6">
-        <DashboardCalendar products={calendarProducts || products} />
       </div>
 
       {/* 알림창 */}
@@ -456,6 +474,12 @@ export default function DashboardClient({ products: initialProducts, groups: ini
         </div>
       )}
 
+      {/* 캘린더 — 검색 중이면 숨기기 */}
+      {!filterName.trim() && (
+        <div className="mb-6">
+          <DashboardCalendar products={calendarProducts || products} />
+        </div>
+      )}
 
       {/* Product list */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
