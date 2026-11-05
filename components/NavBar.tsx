@@ -23,26 +23,26 @@ export default function NavBar({ user }: Props) {
   ];
 
   return (
-    <nav className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-6">
-        <span className="font-bold text-slate-800 text-lg">QA 체크</span>
-        <div className="flex gap-1">
+    <nav className="bg-white border-b border-slate-100 px-6 py-0 flex items-center justify-between shadow-sm h-14">
+      <div className="flex items-center gap-8 h-full">
+        <span className="font-extrabold text-slate-900 text-base tracking-tight">QA 체크 시스템</span>
+        <div className="flex h-full">
           {links.map(l => (
             <Link key={l.href} href={l.href}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${pathname.startsWith(l.href) ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}>
+              className={`px-4 flex items-center text-sm font-medium transition border-b-2 ${pathname.startsWith(l.href) ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}`}>
               {l.label}
             </Link>
           ))}
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-slate-500">
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-slate-600 font-medium">
           {user.name}
-          <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'}`}>
+          <span className={`ml-2 text-xs px-2 py-0.5 rounded-md font-semibold ${user.role === 'admin' ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-500'}`}>
             {user.role === 'admin' ? '관리자' : '편집자'}
           </span>
         </span>
-        <button onClick={logout} className="text-sm text-slate-500 hover:text-slate-800 transition">로그아웃</button>
+        <button onClick={logout} className="text-xs text-slate-400 hover:text-slate-700 border border-slate-200 rounded-md px-2.5 py-1 transition hover:border-slate-400">로그아웃</button>
       </div>
     </nav>
   );
