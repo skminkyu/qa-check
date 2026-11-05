@@ -48,23 +48,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="min-h-screen bg-slate-50 flex">
       <Sidebar user={session} />
-      <main className="flex-1 pl-52 min-w-0 px-6 py-8">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <ProductHeader
-            productId={id}
-            initialName={product.name}
-            initialPartnerName={product.partner_name || ''}
-            initialMdName={product.md_name || ''}
-            initialContactEmail={product.contact_email || ''}
-            initialCcEmail={product.cc_email || ''}
-            initialRecordingDate={product.recording_date || ''}
-            initialBroadcastDate={product.broadcast_date || ''}
-            categoryName={product.category_name}
-            createdAt={product.created_at}
-            readOnly={readOnly}
-          />
-          <div className="flex flex-col items-end gap-2">
+      <main className="flex-1 pl-52 min-w-0">
+        {/* Top bar */}
+        <div className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-100 px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm min-w-0">
+            <a href="/dashboard" className="text-slate-400 hover:text-slate-600 transition shrink-0">대시보드</a>
+            <span className="text-slate-200">/</span>
+            <span className="text-slate-700 font-semibold truncate">{product.name}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             {!readOnly && <ShareButton productId={id} initialToken={shareToken} />}
             {!readOnly && <SendEmailButton productId={id} hasEmail={!!product.contact_email} />}
             {!readOnly && !!product.contact_email && <SendRemindButton productId={id} />}
@@ -72,31 +64,53 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {/* 제조사 평가 */}
-        <ManufacturerEval
-          productId={id}
-          categoryName={product.category_name}
-          initialTarget={product.mfr_eval_target}
-          initialName={product.mfr_eval_name}
-          initialLocation={product.mfr_eval_location}
-          initialNotes={product.mfr_eval_notes}
-          initialCompleted={!!product.mfr_eval_completed}
-          initialEvalDate={product.mfr_eval_date}
-          readOnly={readOnly}
-        />
+        <div className="px-6 py-6 space-y-5">
+          {/* 상품 헤더 카드 */}
+          <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+            <ProductHeader
+              productId={id}
+              initialName={product.name}
+              initialPartnerName={product.partner_name || ''}
+              initialMdName={product.md_name || ''}
+              initialContactEmail={product.contact_email || ''}
+              initialCcEmail={product.cc_email || ''}
+              initialRecordingDate={product.recording_date || ''}
+              initialBroadcastDate={product.broadcast_date || ''}
+              categoryName={product.category_name}
+              createdAt={product.created_at}
+              readOnly={readOnly}
+            />
+          </div>
 
-        {/* QA 체크리스트 (캡처 영역) */}
-        <div id="qa-capture-area" className="mb-6">
-          <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
-          <QATable productId={id} initialRecords={records} readOnly={readOnly} />
+          {/* 제조사 평가 */}
+          <ManufacturerEval
+            productId={id}
+            categoryName={product.category_name}
+            initialTarget={product.mfr_eval_target}
+            initialName={product.mfr_eval_name}
+            initialLocation={product.mfr_eval_location}
+            initialNotes={product.mfr_eval_notes}
+            initialCompleted={!!product.mfr_eval_completed}
+            initialEvalDate={product.mfr_eval_date}
+            readOnly={readOnly}
+          />
+
+          {/* QA 체크리스트 */}
+          <div id="qa-capture-area" className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-4">QA 체크리스트</h2>
+            <QATable productId={id} initialRecords={records} readOnly={readOnly} />
+          </div>
+
+          <ProductLabelImages productId={id} readOnly={readOnly} />
+
+          <ProductNotes
+            productId={id}
+            initialNotes={product.product_notes || ''}
+            readOnly={readOnly}
+          />
+
+          <ChatPanel productId={id} />
         </div>
-        <ProductLabelImages productId={id} readOnly={readOnly} />
-        <ProductNotes
-          productId={id}
-          initialNotes={product.product_notes || ''}
-          readOnly={readOnly}
-        />
-        <ChatPanel productId={id} />
       </main>
     </div>
   );

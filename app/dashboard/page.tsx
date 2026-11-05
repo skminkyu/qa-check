@@ -55,33 +55,37 @@ export default async function DashboardPage() {
       <Sidebar user={session} />
       <main className="flex-1 pl-52 min-w-0">
       <div className="w-full px-8 py-8 max-w-screen-2xl">
+        {/* Page header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">대시보드</h1>
-          <Link href="/products/new" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800 leading-tight">대시보드</h1>
+            <p className="text-xs text-slate-400 mt-0.5">상품 QA 진척 현황</p>
+          </div>
+          <Link href="/products/new" className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">
             + 상품 등록
           </Link>
         </div>
 
-        {/* Calendar + Stats side by side */}
-        <div className="flex gap-6 mb-8 items-start">
-          <div className="flex-1 min-w-0">
-            <DashboardCalendar products={products} />
-          </div>
-          <div className="flex flex-col gap-3 w-52 shrink-0">
-            {[
-              { label: '전체 상품', value: stats.total, numColor: 'text-slate-800', dotColor: 'bg-slate-400' },
-              { label: 'QA 완료', value: stats.completed, numColor: 'text-emerald-600', dotColor: 'bg-emerald-500' },
-              { label: '진행 중', value: stats.inProgress, numColor: 'text-blue-600', dotColor: 'bg-blue-500' },
-            ].map(s => (
-              <div key={s.label} className="bg-white rounded-xl px-5 py-4 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-2 h-2 rounded-full ${s.dotColor}`} />
-                  <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{s.label}</div>
-                </div>
-                <div className={`text-3xl font-extrabold ${s.numColor}`}>{s.value}</div>
+        {/* KPI 카드 가로 3개 */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {[
+            { label: '전체 상품', value: stats.total, numColor: 'text-slate-800', dotColor: 'bg-slate-300', bg: '' },
+            { label: 'QA 완료', value: stats.completed, numColor: 'text-emerald-600', dotColor: 'bg-emerald-400', bg: 'bg-emerald-50/50' },
+            { label: '진행 중', value: stats.inProgress, numColor: 'text-blue-600', dotColor: 'bg-blue-400', bg: 'bg-blue-50/50' },
+          ].map(s => (
+            <div key={s.label} className={`rounded-xl px-5 py-4 border border-slate-100 shadow-sm bg-white ${s.bg}`}>
+              <div className="flex items-center gap-1.5 mb-2">
+                <div className={`w-2 h-2 rounded-full ${s.dotColor}`} />
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{s.label}</span>
               </div>
-            ))}
-          </div>
+              <div className={`text-3xl font-extrabold ${s.numColor}`}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 캘린더 */}
+        <div className="mb-6">
+          <DashboardCalendar products={products} />
         </div>
 
         {/* Product list with filters */}
