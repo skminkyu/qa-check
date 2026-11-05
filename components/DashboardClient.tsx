@@ -75,7 +75,7 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
   }
 
   return (
-    <tr className={`border-b transition ${inGroup ? 'border-violet-50 bg-violet-50/20 hover:bg-violet-50/50' : 'border-slate-100 hover:bg-blue-50/20'}`}>
+    <tr className={`border-b transition ${inGroup ? 'border-slate-100 bg-slate-50/50 hover:bg-slate-50' : 'border-slate-100 hover:bg-slate-50/80'}`}>
       <td className={`py-3.5 font-medium text-slate-800 ${inGroup ? 'pl-10 pr-5' : 'px-5'}`}>
         <div className="flex items-center gap-2">
           <span>{p.name}</span>
@@ -88,7 +88,7 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
             <button
               onClick={() => setShowGroupMenu(v => !v)}
               title={p.group_name ? `그룹: ${p.group_name}` : '그룹 지정'}
-              className={`text-xs px-1.5 py-0.5 rounded border transition ${p.group_id ? 'border-violet-300 bg-violet-50 text-violet-600' : 'border-slate-200 text-slate-300 hover:text-slate-500'}`}
+              className={`text-xs px-1.5 py-0.5 rounded border transition ${p.group_id ? 'border-blue-200 bg-blue-50 text-blue-600' : 'border-slate-200 text-slate-300 hover:text-slate-500'}`}
             >
               📁
             </button>
@@ -97,7 +97,7 @@ function ProductRow({ p, groups, onGroupChange, onDelete, inGroup, unread }: { p
                 <div className="px-3 py-1.5 text-xs font-semibold text-slate-400 border-b border-slate-100">그룹 지정</div>
                 {groups.map(g => (
                   <button key={g.id} onClick={() => assignGroup(g.id)}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition ${p.group_id === g.id ? 'text-violet-600 font-medium' : 'text-slate-700'}`}>
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition ${p.group_id === g.id ? 'text-blue-600 font-medium' : 'text-slate-700'}`}>
                     📁 {g.name} {p.group_id === g.id && '✓'}
                   </button>
                 ))}
@@ -321,17 +321,18 @@ export default function DashboardClient({ products: initialProducts, groups: ini
     <>
       {/* 알림창 */}
       {urgentProducts.length > 0 && !alertDismissed && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+        <div className="mb-6 bg-white border border-red-100 border-l-4 border-l-red-500 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-lg">🚨</span>
-              <span className="font-semibold text-red-700 text-sm">마감 임박 상품 ({urgentProducts.length}건) — 오늘 기준 빠른 처리 필요</span>
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="font-bold text-slate-800 text-sm">마감 임박 {urgentProducts.length}건</span>
+              <span className="text-xs text-slate-400">— 오늘 기준 빠른 처리 필요</span>
             </div>
-            <button onClick={() => setAlertDismissed(true)} className="text-red-300 hover:text-red-500 text-xs transition">✕ 닫기</button>
+            <button onClick={() => setAlertDismissed(true)} className="text-slate-300 hover:text-slate-500 text-xs transition">✕ 닫기</button>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {urgentProducts.map(p => (
-              <div key={p.id} className="flex items-center gap-3 bg-white border border-red-100 rounded-lg px-3 py-2">
+              <div key={p.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
                 <Link href={`/products/${p.id}`} className="font-medium text-slate-800 text-sm hover:text-blue-600 hover:underline flex-1 truncate">{p.name}</Link>
                 <span className="text-xs text-slate-400">{p.category_name}</span>
                 <div className="flex gap-1.5">
@@ -384,9 +385,9 @@ export default function DashboardClient({ products: initialProducts, groups: ini
         {/* 그룹 관리 */}
         <div className="ml-auto flex items-center gap-2">
           {groups.map(g => (
-            <span key={g.id} className="inline-flex items-center gap-1 text-xs bg-violet-50 border border-violet-200 text-violet-700 px-2 py-1 rounded-full">
-              📁 {g.name}
-              <button onClick={() => deleteGroup(g.id)} className="text-violet-300 hover:text-red-400 ml-0.5 transition">✕</button>
+            <span key={g.id} className="inline-flex items-center gap-1 text-xs bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-1 rounded-md font-medium">
+              {g.name}
+              <button onClick={() => deleteGroup(g.id)} className="text-slate-300 hover:text-red-400 ml-0.5 transition">✕</button>
             </span>
           ))}
           {showGroupCreate ? (
@@ -397,14 +398,14 @@ export default function DashboardClient({ products: initialProducts, groups: ini
                 onChange={e => setNewGroupName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') createGroup(); if (e.key === 'Escape') setShowGroupCreate(false); }}
                 placeholder="그룹 이름"
-                className="text-sm border border-violet-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-violet-400 w-32"
+                className="text-xs border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-300/50 w-32"
               />
-              <button onClick={createGroup} className="text-sm bg-violet-600 text-white px-3 py-1.5 rounded-lg hover:bg-violet-700 transition">추가</button>
+              <button onClick={createGroup} className="text-xs bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-500 transition font-medium">추가</button>
               <button onClick={() => setShowGroupCreate(false)} className="text-sm text-slate-400 hover:text-slate-600 transition">취소</button>
             </div>
           ) : (
             <button onClick={() => setShowGroupCreate(true)}
-              className="text-sm border border-violet-200 text-violet-600 px-3 py-1.5 rounded-lg hover:bg-violet-50 transition">
+              className="text-xs border border-slate-200 text-slate-600 px-3 py-2 rounded-lg hover:bg-slate-50 transition font-medium shadow-sm bg-white">
               + 그룹 만들기
             </button>
           )}
@@ -448,13 +449,13 @@ export default function DashboardClient({ products: initialProducts, groups: ini
               const collapsed = collapsedGroups.has(g.id);
               return (
                 <>
-                  <tr key={`group-${g.id}`} className="bg-violet-50/60 border-b border-violet-100/80">
-                    <td colSpan={8} className="px-5 py-2">
+                  <tr key={`group-${g.id}`} className="bg-slate-50 border-b border-slate-200 border-l-4 border-l-blue-500">
+                    <td colSpan={8} className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         <button onClick={() => toggleGroup(g.id)} className="flex items-center gap-2 flex-1 text-left">
-                          <span className="text-sm">{collapsed ? '▶' : '▼'}</span>
-                          <span className="text-sm font-semibold text-violet-800">📁 {g.name}</span>
-                          <span className="text-xs text-violet-500">{gProducts.length}개 상품</span>
+                          <span className="text-xs text-slate-400">{collapsed ? '▶' : '▼'}</span>
+                          <span className="text-sm font-bold text-slate-700">{g.name}</span>
+                          <span className="text-xs text-slate-400 font-normal">{gProducts.length}개 상품</span>
                           {!!unreadGroups[g.id] && (
                             <span className="inline-flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] px-1 animate-pulse">
                               {unreadGroups[g.id]}
