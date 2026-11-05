@@ -289,19 +289,17 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                       ⬇ {r.file_url.split('/').pop()}
                     </a>
                   )}
-                  {(r.standard_notes || !readOnly) && (
-                    <div>
-                      {r.standard && <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 mt-1">QA 의견</div>}
-                      <InlineEditor
-                        value={r.standard_notes || ''}
-                        onChange={v => updateRecord(r.template_id, { standard_notes: v })}
-                        onBlur={() => save(r.template_id)}
-                        placeholder="기준/의견 입력..."
-                        readOnly={readOnly}
-                        rows={3}
-                      />
-                    </div>
-                  )}
+                  <div className={r.standard ? 'mt-1' : ''}>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">QA 의견</div>
+                    <InlineEditor
+                      value={r.standard_notes || ''}
+                      onChange={v => updateRecord(r.template_id, { standard_notes: v })}
+                      onBlur={() => save(r.template_id)}
+                      placeholder="의견 입력..."
+                      readOnly={readOnly}
+                      rows={3}
+                    />
+                  </div>
                 </td>
 
                 {/* 수정 시간 */}
