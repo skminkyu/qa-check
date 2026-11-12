@@ -10,6 +10,7 @@ import ProductNotes from '@/components/ProductNotes';
 import ProductHeader from '@/components/ProductHeader';
 import SendEmailButton from '@/components/SendEmailButton';
 import CaptureImageButton from '@/components/CaptureImageButton';
+import ExportTableButton from '@/components/ExportTableButton';
 import ManufacturerEval from '@/components/ManufacturerEval';
 import SendRemindButton from '@/components/SendRemindButton';
 import ChatPanel from '@/components/ChatPanel';
@@ -60,6 +61,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {!readOnly && <ShareButton productId={id} initialToken={shareToken} />}
             {!readOnly && <SendEmailButton productId={id} hasEmail={!!product.contact_email} />}
             {!readOnly && !!product.contact_email && <SendRemindButton productId={id} />}
+            <ExportTableButton productName={product.name} records={records} />
             <CaptureImageButton targetId="qa-capture-area" filename={product.name} productId={id} />
           </div>
         </div>
