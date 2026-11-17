@@ -1,48 +1,27 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useRef } from 'react';
 
 interface Props {
   targetId: string;
   filename?: string;
-  productId?: string;
-  shareToken?: string;
-  records?: Array<{ status: string }>;
+  productId?: string;    // product page: use /api/products/[id]/screenshot
+  shareToken?: string;   // share page: use /api/share/[token]/screenshot
 }
 
-type Mode = 'all' | 'pending';
-type CaptureStatus = 'idle' | 'capturing' | 'done' | 'error' | 'no-token';
+export default function CaptureImageButton({ targetId, filename = 'QA_체크리스트', productId, shareToken }: Props) {
+  const [status, setStatus] = useState<'idle' | 'capturing' | 'done' | 'error' | 'no-token'>('idle');
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-export default function CaptureImageButton({ filename = 'QA_체크리스트', productId, shareToken, records = [] }: Props) {
-  const [showModal, setShowModal] = useState(false);
-  const [status, setStatus] = useState<CaptureStatus>('idle');
-  const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setShowModal(false);
-    }
-    if (showModal) document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [showModal]);
-
-  const pendingCount = records.filter(r =>
-    r.status === '미완료' || r.status === '진행중' || r.status === '보류'
-  ).length;
-
-  async function capture(mode: Mode, action: 'download' | 'copy') {
-    setActiveKey(`${mode}-${action}`);
+  async function capture(action: 'download' | 'copy') {
+    setShowMenu(false);
     setStatus('capturing');
-    setShowModal(false);
     try {
       let screenshotUrl: string;
       if (productId) {
-        screenshotUrl = `/api/products/${productId}/screenshot${mode === 'pending' ? '?filter=pending' : ''}`;
+        screenshotUrl = `/api/products/${productId}/screenshot`;
       } else if (shareToken) {
-        screenshotUrl = `/api/share/${shareToken}/screenshot${mode === 'pending' ? '?filter=pending' : ''}`;
+        screenshotUrl = `/api/share/${shareToken}/screenshot`;
       } else {
         throw new Error('No productId or shareToken provided');
       }
@@ -63,7 +42,7 @@ export default function CaptureImageButton({ filename = 'QA_체크리스트', pr
       if (action === 'download') {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `${filename}${mode === 'pending' ? '_미완료진행중보류' : ''}.png`;
+        link.download = `${filename}.png`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
@@ -72,134 +51,67 @@ export default function CaptureImageButton({ filename = 'QA_체크리스트', pr
       }
 
       setStatus('done');
-      setTimeout(() => { setStatus('idle'); setActiveKey(null); }, 2500);
+      setTimeout(() => setStatus('idle'), 2500);
     } catch (e) {
       console.error(e);
       setStatus('error');
-      setTimeout(() => { setStatus('idle'); setActiveKey(null); }, 3000);
+      setTimeout(() => setStatus('idle'), 3000);
     }
   }
 
-  const triggerButton = (
-    <button
-      onClick={() => setShowModal(true)}
-      disabled={status === 'capturing'}
-      className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition ${
-        status === 'capturing' ? 'border-blue-200 bg-blue-50 text-blue-500 cursor-wait' :
-        status === 'done'      ? 'border-emerald-300 bg-emerald-50 text-emerald-600' :
-        status === 'error'     ? 'border-red-300 bg-red-50 text-red-600' :
-        'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-      }`}
-    >
-      {status === 'capturing' ? <><span className="inline-block animate-spin">⟳</span> 캡처 중...</> :
-       status === 'done'      ? '✓ 완료' :
-       status === 'error'     ? '✕ 오류' :
-       '🖼 이미지 저장'}
-    </button>
-  );
-
+  if (status === 'capturing') {
+    return (
+      <button disabled className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-400">
+        <span className="inline-block animate-spin">⟳</span> 캡처 중...
+      </button>
+    );
+  }
+  if (status === 'done') {
+    return (
+      <button disabled className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-600">
+        ✓ 완료
+      </button>
+    );
+  }
+  if (status === 'error') {
+    return (
+      <button disabled className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-red-300 bg-red-50 text-red-600">
+        ✕ 오류
+      </button>
+    );
+  }
   if (status === 'no-token') {
     return (
       <div className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 max-w-xs">
-        ⚠ 먼저 공유 링크를 생성해주세요.
+        ⚠ 먼저 상품 상세 페이지에서 공유 링크를 생성해주세요.
       </div>
     );
   }
 
   return (
-    <>
-      {triggerButton}
-
-      {showModal && mounted && createPortal(
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-          style={{ paddingTop: '72px', paddingBottom: '24px' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-auto"
-            style={{ maxHeight: 'calc(100vh - 100px)' }}
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setShowMenu(v => !v)}
+        className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
+      >
+        🖼 이미지 저장 ▾
+      </button>
+      {showMenu && (
+        <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50 w-44">
+          <button
+            onClick={() => capture('download')}
+            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition flex items-center gap-2"
           >
-            {/* Header */}
-            <div className="px-6 py-5 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-slate-800">이미지 저장</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">저장할 항목 범위를 선택하세요</p>
-                </div>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-slate-300 hover:text-slate-500 transition text-lg leading-none"
-                >✕</button>
-              </div>
-            </div>
-
-            {/* Options */}
-            <div className="px-6 py-5 flex flex-col gap-3">
-              {/* 전체 항목 */}
-              <div className="border rounded-xl border-slate-200 overflow-hidden">
-                <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
-                  <span className="text-xl">📋</span>
-                  <div>
-                    <div className="text-sm font-bold text-slate-800">전체 항목</div>
-                    <div className="text-xs text-slate-400">완료·진행중·미완료·해당없음 포함 · 총 {records.length}개</div>
-                  </div>
-                </div>
-                <div className="flex divide-x divide-slate-100">
-                  <button
-                    onClick={() => capture('all', 'download')}
-                    className="flex-1 py-2.5 text-xs font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition flex items-center justify-center gap-1.5"
-                  >
-                    ⬇ PNG 다운로드
-                  </button>
-                  <button
-                    onClick={() => capture('all', 'copy')}
-                    className="flex-1 py-2.5 text-xs font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition flex items-center justify-center gap-1.5"
-                  >
-                    📋 클립보드 복사
-                  </button>
-                </div>
-              </div>
-
-              {/* 미완료·진행중·보류만 */}
-              <div className="border rounded-xl border-slate-200 overflow-hidden">
-                <div className="px-4 py-3 bg-amber-50/60 border-b border-amber-100 flex items-center gap-3">
-                  <span className="text-xl">⚠️</span>
-                  <div>
-                    <div className="text-sm font-bold text-slate-800">미완료 · 진행중 · 보류만</div>
-                    <div className="text-xs text-slate-400">
-                      처리 필요 항목만 추출 ·{' '}
-                      <span className={pendingCount > 0 ? 'text-amber-600 font-semibold' : ''}>{pendingCount}개</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex divide-x divide-slate-100">
-                  <button
-                    onClick={() => capture('pending', 'download')}
-                    className="flex-1 py-2.5 text-xs font-medium text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition flex items-center justify-center gap-1.5"
-                  >
-                    ⬇ PNG 다운로드
-                  </button>
-                  <button
-                    onClick={() => capture('pending', 'copy')}
-                    className="flex-1 py-2.5 text-xs font-medium text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition flex items-center justify-center gap-1.5"
-                  >
-                    📋 클립보드 복사
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 pb-5">
-              <p className="text-xs text-slate-300 text-center">
-                PNG 형식으로 저장됩니다
-              </p>
-            </div>
-          </div>
-        </div>,
-        document.body
+            ⬇ PNG 다운로드
+          </button>
+          <button
+            onClick={() => capture('copy')}
+            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition flex items-center gap-2 border-t border-slate-100"
+          >
+            📋 클립보드 복사
+          </button>
+        </div>
       )}
-    </>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 
 interface QARecord {
   item_name: string;
@@ -98,10 +97,7 @@ export default function ExportTableButton({ productName, records }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle');
   const [copiedMode, setCopiedMode] = useState<Mode | null>(null);
-  const [mounted, setMounted] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const pendingCount = records.filter(r =>
     r.status === '미완료' || r.status === '진행중' || r.status === '보류'
@@ -155,17 +151,16 @@ export default function ExportTableButton({ productName, records }: Props) {
         📊 도표 복사
       </button>
 
-      {/* Modal — portal to document.body to escape any parent stacking context */}
-      {showModal && mounted && createPortal(
+      {/* Modal */}
+      {showModal && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
-          style={{ paddingTop: '72px', paddingBottom: '24px' }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm pb-4 sm:pb-0 pt-16 sm:pt-0 px-4"
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}
         >
           <div
             ref={modalRef}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-auto"
-            style={{ maxHeight: 'calc(100vh - 100px)' }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            style={{ maxHeight: 'calc(100vh - 80px)' }}
           >
             {/* Header */}
             <div className="px-6 py-5 border-b border-slate-100">
@@ -262,8 +257,7 @@ export default function ExportTableButton({ productName, records }: Props) {
               </p>
             </div>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
     </>
   );
