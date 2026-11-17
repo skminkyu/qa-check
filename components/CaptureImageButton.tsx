@@ -37,38 +37,48 @@ export default function CaptureImageButton({ filename = 'QA_체크리스트', pr
     setActiveKey(`${mode}-${action}`);
     setStatus('capturing');
     setShowModal(false);
+
+    let screenshotUrl: string;
+    if (productId) {
+      screenshotUrl = `/api/products/${productId}/screenshot${mode === 'pending' ? '?filter=pending' : ''}`;
+    } else if (shareToken) {
+      screenshotUrl = `/api/share/${shareToken}/screenshot${mode === 'pending' ? '?filter=pending' : ''}`;
+    } else {
+      setStatus('error');
+      setTimeout(() => { setStatus('idle'); setActiveKey(null); }, 3000);
+      return;
+    }
+
     try {
-      let screenshotUrl: string;
-      if (productId) {
-        screenshotUrl = `/api/products/${productId}/screenshot${mode === 'pending' ? '?filter=pending' : ''}`;
-      } else if (shareToken) {
-        screenshotUrl = `/api/share/${shareToken}/screenshot${mode === 'pending' ? '?filter=pending' : ''}`;
+      if (action === 'copy') {
+        // Pass a Promise directly to ClipboardItem so it registers within the user gesture
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'image/png': fetch(screenshotUrl).then(async res => {
+              if (!res.ok) throw new Error(res.statusText);
+              return res.blob();
+            }),
+          }),
+        ]);
       } else {
-        throw new Error('No productId or shareToken provided');
-      }
-
-      const res = await fetch(screenshotUrl);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        const msg = err.error || res.statusText;
-        if (res.status === 400 && msg.includes('share token')) {
-          setStatus('no-token');
-          setTimeout(() => setStatus('idle'), 5000);
-          return;
+        const res = await fetch(screenshotUrl);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: res.statusText }));
+          const msg = err.error || res.statusText;
+          if (res.status === 400 && msg.includes('share token')) {
+            setStatus('no-token');
+            setTimeout(() => setStatus('idle'), 5000);
+            return;
+          }
+          throw new Error(msg);
         }
-        throw new Error(msg);
-      }
-      const blob = await res.blob();
-
-      if (action === 'download') {
+        const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = `${filename}${mode === 'pending' ? '_미완료진행중보류' : ''}.png`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
-      } else {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       }
 
       setStatus('done');
