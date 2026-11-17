@@ -154,12 +154,13 @@ export default function ExportTableButton({ productName, records }: Props) {
       {/* Modal */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm pb-4 sm:pb-0 pt-16 sm:pt-0 px-4"
           onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}
         >
           <div
             ref={modalRef}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            style={{ maxHeight: 'calc(100vh - 80px)' }}
           >
             {/* Header */}
             <div className="px-6 py-5 border-b border-slate-100">
