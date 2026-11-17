@@ -130,7 +130,6 @@ export default function CaptureImageButton({ filename = 'QA_체크리스트', pr
             className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-auto"
             style={{ maxHeight: 'calc(100vh - 100px)' }}
           >
-            {/* Header */}
             <div className="px-6 py-5 border-b border-slate-100">
               <div className="flex items-center justify-between">
                 <div>
@@ -144,9 +143,7 @@ export default function CaptureImageButton({ filename = 'QA_체크리스트', pr
               </div>
             </div>
 
-            {/* Options */}
             <div className="px-6 py-5 flex flex-col gap-3">
-              {/* 전체 항목 */}
               <div className="border rounded-xl border-slate-200 overflow-hidden">
                 <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
                   <span className="text-xl">📋</span>
@@ -171,7 +168,6 @@ export default function CaptureImageButton({ filename = 'QA_체크리스트', pr
                 </div>
               </div>
 
-              {/* 미완료·진행중·보류만 */}
               <div className="border rounded-xl border-slate-200 overflow-hidden">
                 <div className="px-4 py-3 bg-amber-50/60 border-b border-amber-100 flex items-center gap-3">
                   <span className="text-xl">⚠️</span>
@@ -200,11 +196,8 @@ export default function CaptureImageButton({ filename = 'QA_체크리스트', pr
               </div>
             </div>
 
-            {/* Footer */}
             <div className="px-6 pb-5">
-              <p className="text-xs text-slate-300 text-center">
-                PNG 형식으로 저장됩니다
-              </p>
+              <p className="text-xs text-slate-300 text-center">PNG 형식으로 저장됩니다</p>
             </div>
           </div>
         </div>,
