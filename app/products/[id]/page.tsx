@@ -62,7 +62,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {!readOnly && <SendEmailButton productId={id} hasEmail={!!product.contact_email} />}
             {!readOnly && !!product.contact_email && <SendRemindButton productId={id} />}
             <ExportTableButton productName={product.name} records={records} />
-            <CaptureImageButton targetId="qa-capture-area" filename={product.name} productId={id} />
+            <CaptureImageButton targetId="qa-capture-area" filename={product.name} productId={id} records={records} />
           </div>
         </div>
 
