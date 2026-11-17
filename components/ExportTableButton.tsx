@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface QARecord {
   item_name: string;
@@ -15,6 +15,9 @@ interface Props {
   records: QARecord[];
 }
 
+type Mode = 'all' | 'pending';
+type CopyStatus = 'idle' | 'copying' | 'done' | 'error';
+
 const STATUS_COLOR: Record<string, string> = {
   '완료':    '#065f46',
   '진행중':  '#1e40af',
@@ -22,7 +25,6 @@ const STATUS_COLOR: Record<string, string> = {
   '해당없음':'#64748b',
   '미완료':  '#991b1b',
 };
-
 const STATUS_BG: Record<string, string> = {
   '완료':    '#d1fae5',
   '진행중':  '#dbeafe',
@@ -31,38 +33,48 @@ const STATUS_BG: Record<string, string> = {
   '미완료':  '#fee2e2',
 };
 
-function buildHtml(productName: string, records: QARecord[]): string {
-  const rows = records.map((r, i) => {
-    const fg  = STATUS_COLOR[r.status] || '#334155';
-    const bg  = STATUS_BG[r.status]   || '#f8fafc';
-    const even = i % 2 === 1;
-    const rowBg = even ? '#f8fafc' : '#ffffff';
+function buildHtml(productName: string, records: QARecord[], mode: Mode): string {
+  const subset = mode === 'pending'
+    ? records.filter(r => r.status === '미완료' || r.status === '진행중' || r.status === '보류')
+    : records;
 
-    const cell = (content: string, extra = '') =>
-      `<td style="border:1px solid #cbd5e1;padding:8px 12px;vertical-align:top;font-size:12px;font-family:Arial,sans-serif;${extra}">${content.replace(/\n/g, '<br>')}</td>`;
+  const modeLabel = mode === 'pending' ? '미완료·진행중·보류 항목' : '전체 항목';
+  const done  = records.filter(r => r.status === '완료').length;
+  const na    = records.filter(r => r.status === '해당없음').length;
+  const eff   = records.length - na;
+  const pct   = eff > 0 ? Math.round((done / eff) * 100) : 0;
+  const todo  = records.filter(r => r.status === '미완료').length;
+  const prog  = records.filter(r => r.status === '진행중').length;
+  const hold  = records.filter(r => r.status === '보류').length;
 
+  const cell = (content: string, extra = '') =>
+    `<td style="border:1px solid #cbd5e1;padding:8px 12px;vertical-align:top;font-size:12px;font-family:Arial,sans-serif;${extra}">${content.replace(/\n/g, '<br>')}</td>`;
+
+  const rows = subset.map((r, i) => {
+    const fg    = STATUS_COLOR[r.status] || '#334155';
+    const bg    = STATUS_BG[r.status]   || '#f8fafc';
+    const rowBg = i % 2 === 1 ? '#f8fafc' : '#ffffff';
     return `<tr style="background:${rowBg}">
   ${cell(String(i + 1), 'color:#94a3b8;text-align:center;width:28px;')}
   ${cell(r.item_name, 'font-weight:600;color:#1e293b;width:160px;')}
-  ${cell(`<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:${bg};color:${fg};">${r.status}</span>`, 'width:70px;')}
-  ${cell(r.due_date || '', 'color:#64748b;width:90px;')}
+  ${cell(`<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:${bg};color:${fg};">${r.status}</span>`, 'width:72px;')}
+  ${cell(r.due_date || '', 'color:#64748b;width:92px;')}
   ${cell(r.qa_notes || '', 'color:#334155;')}
   ${cell(r.standard ? `<strong style="color:#1e3a8a;">${r.standard}</strong>` : '', 'color:#334155;width:200px;')}
   ${cell(r.standard_notes || '', 'color:#334155;')}
 </tr>`;
   }).join('\n');
 
-  const done = records.filter(r => r.status === '완료').length;
-  const na   = records.filter(r => r.status === '해당없음').length;
-  const eff  = records.length - na;
-  const pct  = eff > 0 ? Math.round((done / eff) * 100) : 0;
+  const noRows = subset.length === 0
+    ? `<tr><td colspan="7" style="text-align:center;padding:16px;color:#94a3b8;font-size:12px;font-family:Arial,sans-serif;">해당 항목이 없습니다.</td></tr>`
+    : '';
 
-  return `<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;width:100%;min-width:800px;">
+  return `<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;width:100%;min-width:820px;">
 <thead>
   <tr>
     <td colspan="7" style="padding:10px 14px;background:#0f172a;color:#ffffff;font-size:14px;font-weight:700;font-family:Arial,sans-serif;">
-      ${productName} &nbsp;·&nbsp; QA 체크리스트 &nbsp;&nbsp;
-      <span style="font-size:12px;font-weight:400;color:#94a3b8;">${done}/${records.length} 완료 (${pct}%) &nbsp;|&nbsp; 기준 미완료 ${records.filter(r=>r.status==='미완료').length}건 &nbsp;|&nbsp; 보류 ${records.filter(r=>r.status==='보류').length}건</span>
+      ${productName} &nbsp;·&nbsp; QA 체크리스트 (${modeLabel}) &nbsp;&nbsp;
+      <span style="font-size:11px;font-weight:400;color:#94a3b8;">${done}/${records.length} 완료 (${pct}%) &nbsp;|&nbsp; 미완료 ${todo}건 &nbsp;|&nbsp; 진행중 ${prog}건 &nbsp;|&nbsp; 보류 ${hold}건</span>
     </td>
   </tr>
   <tr style="background:#1e293b;">
@@ -76,18 +88,37 @@ function buildHtml(productName: string, records: QARecord[]): string {
   </tr>
 </thead>
 <tbody>
-${rows}
+${noRows || rows}
 </tbody>
 </table>`;
 }
 
 export default function ExportTableButton({ productName, records }: Props) {
-  const [status, setStatus] = useState<'idle' | 'done' | 'error'>('idle');
+  const [showModal, setShowModal] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle');
+  const [copiedMode, setCopiedMode] = useState<Mode | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  async function copyTable() {
+  const pendingCount = records.filter(r =>
+    r.status === '미완료' || r.status === '진행중' || r.status === '보류'
+  ).length;
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setShowModal(false);
+    }
+    if (showModal) document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [showModal]);
+
+  async function copy(mode: Mode) {
+    setCopyStatus('copying');
     try {
-      const html = buildHtml(productName, records);
-      const plain = records.map((r, i) =>
+      const html  = buildHtml(productName, records, mode);
+      const subset = mode === 'pending'
+        ? records.filter(r => r.status === '미완료' || r.status === '진행중' || r.status === '보류')
+        : records;
+      const plain = subset.map((r, i) =>
         `${i+1}\t${r.item_name}\t${r.status}\t${r.due_date||''}\t${r.qa_notes||''}\t${r.standard||''}\t${r.standard_notes||''}`
       ).join('\n');
 
@@ -97,31 +128,136 @@ export default function ExportTableButton({ productName, records }: Props) {
           'text/plain': new Blob([plain], { type: 'text/plain' }),
         }),
       ]);
-      setStatus('done');
-      setTimeout(() => setStatus('idle'), 2500);
+      setCopiedMode(mode);
+      setCopyStatus('done');
+      setTimeout(() => {
+        setCopyStatus('idle');
+        setCopiedMode(null);
+        setShowModal(false);
+      }, 2000);
     } catch {
-      setStatus('error');
-      setTimeout(() => setStatus('idle'), 3000);
+      setCopyStatus('error');
+      setTimeout(() => setCopyStatus('idle'), 3000);
     }
   }
 
-  if (status === 'done') return (
-    <button disabled className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-600">
-      ✓ 복사 완료 — 아웃룩에 붙여넣기
-    </button>
-  );
-  if (status === 'error') return (
-    <button disabled className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-red-300 bg-red-50 text-red-600">
-      ✕ 복사 실패
-    </button>
-  );
-
   return (
-    <button
-      onClick={copyTable}
-      className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
-    >
-      📊 도표 복사
-    </button>
+    <>
+      {/* Trigger button */}
+      <button
+        onClick={() => setShowModal(true)}
+        className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
+      >
+        📊 도표 복사
+      </button>
+
+      {/* Modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}
+        >
+          <div
+            ref={modalRef}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+          >
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-slate-800">도표 복사</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">아웃룩에 바로 붙여넣기 가능한 표</p>
+                </div>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-slate-300 hover:text-slate-500 transition text-lg leading-none"
+                >✕</button>
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="px-6 py-5 flex flex-col gap-3">
+              {/* 전체 항목 */}
+              <button
+                onClick={() => copy('all')}
+                disabled={copyStatus === 'copying'}
+                className="group relative w-full text-left border rounded-xl px-4 py-4 transition hover:border-blue-400 hover:bg-blue-50/50 border-slate-200 disabled:opacity-60"
+              >
+                {copiedMode === 'all' && copyStatus === 'done' ? (
+                  <div className="flex items-center gap-2 text-emerald-600">
+                    <span className="text-lg">✓</span>
+                    <div>
+                      <div className="text-sm font-bold">복사 완료!</div>
+                      <div className="text-xs">아웃룩에 Ctrl+V 로 붙여넣기</div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">📋</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-slate-800">전체 항목</div>
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          완료·진행중·미완료·해당없음 포함 · 총 {records.length}개
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition shrink-0">
+                        {copyStatus === 'copying' && copiedMode !== 'pending' ? '복사 중…' : '클릭하여 복사'}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </button>
+
+              {/* 미완료·진행중 항목만 */}
+              <button
+                onClick={() => copy('pending')}
+                disabled={copyStatus === 'copying'}
+                className="group relative w-full text-left border rounded-xl px-4 py-4 transition hover:border-amber-400 hover:bg-amber-50/50 border-slate-200 disabled:opacity-60"
+              >
+                {copiedMode === 'pending' && copyStatus === 'done' ? (
+                  <div className="flex items-center gap-2 text-emerald-600">
+                    <span className="text-lg">✓</span>
+                    <div>
+                      <div className="text-sm font-bold">복사 완료!</div>
+                      <div className="text-xs">아웃룩에 Ctrl+V 로 붙여넣기</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-slate-800">미완료 · 진행중 · 보류만</div>
+                      <div className="text-xs text-slate-400 mt-0.5">
+                        처리 필요 항목만 추출 ·{' '}
+                        <span className={pendingCount > 0 ? 'text-amber-600 font-semibold' : ''}>
+                          {pendingCount}개
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold text-amber-600 opacity-0 group-hover:opacity-100 transition shrink-0">
+                      {copyStatus === 'copying' && copiedMode === 'pending' ? '복사 중…' : '클릭하여 복사'}
+                    </span>
+                  </div>
+                )}
+              </button>
+
+              {copyStatus === 'error' && (
+                <p className="text-xs text-red-500 text-center">
+                  복사 실패 — 브라우저 권한을 확인해 주세요.
+                </p>
+              )}
+            </div>
+
+            {/* Footer hint */}
+            <div className="px-6 pb-5">
+              <p className="text-xs text-slate-300 text-center">
+                복사 후 아웃룩 메일 작성창에서 Ctrl+V
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
