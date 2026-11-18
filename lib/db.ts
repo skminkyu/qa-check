@@ -121,6 +121,7 @@ function initSchema(db: Database.Database) {
     PRIMARY KEY(product_id, slot_index)
   )`); } catch {}
   try { db.exec('ALTER TABLE products ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0'); } catch {}
+  try { db.exec('ALTER TABLE qa_records ADD COLUMN priority INTEGER NOT NULL DEFAULT 0'); } catch {}
   try { db.exec(`CREATE TABLE IF NOT EXISTS chat_messages (
     id TEXT PRIMARY KEY,
     product_id TEXT,
