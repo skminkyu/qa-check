@@ -60,6 +60,9 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
   const [dueDateSort, setDueDateSort] = useState<'asc' | 'desc' | null>(null);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [showSummary, setShowSummary] = useState(true);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -158,6 +161,22 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
 
   const priorityItems = displayed.filter(r => r.priority);
 
+  async function generateAiSummary() {
+    setAiLoading(true);
+    setAiError(null);
+    setAiSummary(null);
+    try {
+      const res = await fetch(`/api/products/${productId}/ai-summary`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '요약 생성 실패');
+      setAiSummary(data.summary);
+    } catch (e) {
+      setAiError(String(e));
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   return (
     <div>
       {/* ── 진행 현황 요약 카드 ── */}
@@ -228,6 +247,49 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                 ✕ 필터 초기화
               </button>
             )}
+
+            {/* AI 요약 */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">✨</span>
+                  <span className="text-xs font-bold text-slate-700">AI 진행 현황 요약</span>
+                  <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">Gemini</span>
+                </div>
+                <button
+                  onClick={generateAiSummary}
+                  disabled={aiLoading}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${
+                    aiLoading
+                      ? 'border-blue-200 bg-blue-50 text-blue-400 cursor-wait'
+                      : 'border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100'
+                  }`}
+                >
+                  {aiLoading ? (
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block animate-spin">⟳</span> 분석 중...
+                    </span>
+                  ) : aiSummary ? '다시 생성' : 'AI 요약 생성'}
+                </button>
+              </div>
+              <div className="px-4 py-3">
+                {aiLoading && (
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <span className="inline-block animate-pulse">●</span>
+                    <span className="animate-pulse">Gemini가 QA 현황을 분석하고 있습니다...</span>
+                  </div>
+                )}
+                {aiError && (
+                  <p className="text-xs text-red-500">{aiError}</p>
+                )}
+                {aiSummary && !aiLoading && (
+                  <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{aiSummary}</p>
+                )}
+                {!aiSummary && !aiLoading && !aiError && (
+                  <p className="text-xs text-slate-300">버튼을 눌러 AI가 현재 QA 진행 상황을 분석하고 요약합니다.</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
