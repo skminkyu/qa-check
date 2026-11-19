@@ -254,7 +254,7 @@ export default function QATable({ productId, initialRecords, readOnly = false }:
                 <div className="flex items-center gap-2">
                   <span className="text-sm">✨</span>
                   <span className="text-xs font-bold text-slate-700">AI 진행 현황 요약</span>
-                  <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">Gemini</span>
+                  <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">Groq</span>
                 </div>
                 <button
                   onClick={generateAiSummary}
