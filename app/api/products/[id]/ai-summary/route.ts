@@ -94,9 +94,9 @@ ${recordLines}
 5. 마지막에 가장 시급한 액션 아이템 1~3개 제시
 6. 전체 200자 이내로 간결하게 (불필요한 소제목/마크다운 형식 없이 자연스러운 문장으로)`;
 
-  // Groq models to try in order (free tier)
   const MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
 
+  let lastError = '';
   for (const model of MODELS) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -119,17 +119,22 @@ ${recordLines}
         }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          if (res.status === 404) break; // model not found, try next
-          return NextResponse.json({ error: `Groq API 오류: ${JSON.stringify(err)}` }, { status: 500 });
+          lastError = `[${model}] ${JSON.stringify(err)}`;
+          break; // try next model on any error
         }
         const data = await res.json();
-        const summary = data?.choices?.[0]?.message?.content || '요약을 생성할 수 없습니다.';
+        const summary = data?.choices?.[0]?.message?.content?.trim();
+        if (!summary) {
+          lastError = `[${model}] empty response`;
+          break; // try next model if empty
+        }
         return NextResponse.json({ summary, model });
       } catch (e) {
-        return NextResponse.json({ error: String(e) }, { status: 500 });
+        lastError = String(e);
+        break;
       }
     }
   }
 
-  return NextResponse.json({ error: '현재 Groq 서버가 혼잡합니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
+  return NextResponse.json({ error: `Groq API 오류: ${lastError || '모든 모델 실패'}` }, { status: 500 });
 }
