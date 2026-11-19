@@ -43,18 +43,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return Math.round((d.getTime() - today.getTime()) / 86400000);
   }
 
-  const recordLines = records.map((r, i) => {
-    const parts = [
-      `${i + 1}. [${r.status}]${r.priority ? ' ⚡최우선' : ''} ${r.item_name}`,
-    ];
-    if (r.due_date) {
-      const dd = dday(r.due_date);
-      const ddLabel = dd === 0 ? 'D-Day' : dd !== null && dd > 0 ? `D-${dd}` : dd !== null ? `D+${Math.abs(dd)} 초과` : '';
-      parts.push(`   완료예정일: ${r.due_date} (${ddLabel})`);
-    }
-    if (r.qa_notes) parts.push(`   QA확인사항: ${r.qa_notes}`);
-    if (r.standard_notes) parts.push(`   QA의견: ${r.standard_notes}`);
-    return parts.join('\n');
+  // Only include actionable records (non-완료, non-해당없음) to keep prompt small
+  const actionable = records.filter(r => r.status !== '완료' && r.status !== '해당없음');
+  const truncate = (s: string, n: number) => s && s.length > n ? s.slice(0, n) + '…' : s;
+  const recordLines = actionable.slice(0, 30).map((r, i) => {
+    const dd = r.due_date ? dday(r.due_date) : null;
+    const ddLabel = dd === null ? '' : dd === 0 ? ' D-Day' : dd > 0 ? ` D-${dd}` : ` D+${Math.abs(dd)}초과`;
+    const notes = [r.qa_notes && `확인:${truncate(r.qa_notes, 60)}`, r.standard_notes && `의견:${truncate(r.standard_notes, 60)}`].filter(Boolean).join(' / ');
+    return `${i + 1}.[${r.status}]${r.priority ? '⚡' : ''} ${r.item_name}${r.due_date ? `(${r.due_date}${ddLabel})` : ''}${notes ? ` - ${notes}` : ''}`;
   }).join('\n');
 
   const done  = records.filter(r => r.status === '완료').length;
@@ -69,30 +65,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const recDday = product.recording_date ? dday(product.recording_date) : null;
   const brdDday = product.broadcast_date ? dday(product.broadcast_date) : null;
 
-  const prompt = `당신은 QA(품질검사) 체크리스트를 분석하는 전문가입니다.
-아래 QA 현황 데이터를 바탕으로 한국어로 간결하고 실용적인 요약을 작성해주세요.
+  const recDate = product.recording_date ? `${product.recording_date}${recDday !== null ? `(${recDday === 0 ? 'D-Day' : recDday > 0 ? `D-${recDday}` : `D+${Math.abs(recDday)}초과`})` : ''}` : '미입력';
+  const brdDate = product.broadcast_date ? `${product.broadcast_date}${brdDday !== null ? `(${brdDday === 0 ? 'D-Day' : brdDday > 0 ? `D-${brdDday}` : `D+${Math.abs(brdDday)}초과`})` : ''}` : '미입력';
 
-## 상품 정보
-- 상품명: ${product.name}
-- 협력사: ${product.partner_name || '미입력'}
-- 녹화일: ${product.recording_date || '미입력'}${recDday !== null ? ` (${recDday === 0 ? 'D-Day' : recDday > 0 ? `D-${recDday}` : `D+${Math.abs(recDday)} 초과`})` : ''}
-- 송출일: ${product.broadcast_date || '미입력'}${brdDday !== null ? ` (${brdDday === 0 ? 'D-Day' : brdDday > 0 ? `D-${brdDday}` : `D+${Math.abs(brdDday)} 초과`})` : ''}
+  const prompt = `QA 체크리스트 요약 (한국어, 200자 이내, 소제목 없이 자연스러운 문장):
 
-## QA 진행 현황
-- 전체: ${records.length}항목 / 완료: ${done} / 미완료: ${todo} / 진행중: ${prog} / 보류: ${hold} / 해당없음: ${na}
-- 완료율: ${pct}%
-- 최우선 처리 항목: ${prio}건
+상품: ${product.name} / 협력사: ${product.partner_name || '-'} / 녹화: ${recDate} / 송출: ${brdDate}
+완료율: ${pct}% (전체${records.length} 완료${done} 미완료${todo} 진행중${prog} 보류${hold} 해당없음${na}) 최우선${prio}건
 
-## 항목별 상세
+미완료/진행중/보류 항목(${actionable.length}건):
 ${recordLines}
 
-## 요약 작성 가이드
-1. 첫 줄: 완료율과 전반적인 진행 상황을 한 문장으로
-2. 최우선 항목이 있으면 반드시 명시
-3. 완료예정일이 초과된 항목 강조
-4. QA 의견이나 확인사항에서 주요 이슈 추출
-5. 마지막에 가장 시급한 액션 아이템 1~3개 제시
-6. 전체 200자 이내로 간결하게 (불필요한 소제목/마크다운 형식 없이 자연스러운 문장으로)`;
+요약 시 완료율·최우선항목·기한초과·주요이슈·시급한 액션1~3개 포함.`;
 
   const MODELS = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
 
@@ -113,9 +97,15 @@ ${recordLines}
             temperature: 0.4,
           }),
         });
-        if (res.status === 503 || res.status === 429) {
+        if (res.status === 503) {
           await new Promise(r => setTimeout(r, 1500));
           continue;
+        }
+        if (res.status === 429) {
+          // rate limit - try next model immediately
+          const err = await res.json().catch(() => ({}));
+          lastError = `[${model}] ${JSON.stringify(err)}`;
+          break;
         }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
