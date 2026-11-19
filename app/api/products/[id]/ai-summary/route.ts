@@ -6,8 +6,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await getSession();
   if (!session) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: 'GROQ_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
 
   const { id } = await params;
   const db = getDb();
@@ -94,31 +94,36 @@ ${recordLines}
 5. 마지막에 가장 시급한 액션 아이템 1~3개 제시
 6. 전체 200자 이내로 간결하게 (불필요한 소제목/마크다운 형식 없이 자연스러운 문장으로)`;
 
-  const MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite'];
-  const body = JSON.stringify({
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 512, temperature: 0.4 },
-  });
+  // Groq models to try in order (free tier)
+  const MODELS = ['llama-3.3-70b-versatile', 'llama3-8b-8192', 'gemma2-9b-it'];
 
   for (const model of MODELS) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
-        );
-        if (res.status === 503) {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 512,
+            temperature: 0.4,
+          }),
+        });
+        if (res.status === 503 || res.status === 429) {
           await new Promise(r => setTimeout(r, 1500));
           continue;
         }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          // 404 = model not found, try next model
-          if (res.status === 404) break;
-          return NextResponse.json({ error: `Gemini API 오류: ${JSON.stringify(err)}` }, { status: 500 });
+          if (res.status === 404) break; // model not found, try next
+          return NextResponse.json({ error: `Groq API 오류: ${JSON.stringify(err)}` }, { status: 500 });
         }
         const data = await res.json();
-        const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text || '요약을 생성할 수 없습니다.';
+        const summary = data?.choices?.[0]?.message?.content || '요약을 생성할 수 없습니다.';
         return NextResponse.json({ summary, model });
       } catch (e) {
         return NextResponse.json({ error: String(e) }, { status: 500 });
@@ -126,5 +131,5 @@ ${recordLines}
     }
   }
 
-  return NextResponse.json({ error: '현재 Gemini 서버가 혼잡합니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
+  return NextResponse.json({ error: '현재 Groq 서버가 혼잡합니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
 }
