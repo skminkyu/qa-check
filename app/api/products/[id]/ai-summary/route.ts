@@ -94,28 +94,37 @@ ${recordLines}
 5. 마지막에 가장 시급한 액션 아이템 1~3개 제시
 6. 전체 200자 이내로 간결하게 (불필요한 소제목/마크다운 형식 없이 자연스러운 문장으로)`;
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 512, temperature: 0.4 },
-        }),
+  const MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite'];
+  const body = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { maxOutputTokens: 512, temperature: 0.4 },
+  });
+
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }
+        );
+        if (res.status === 503) {
+          await new Promise(r => setTimeout(r, 1500));
+          continue;
+        }
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          // 404 = model not found, try next model
+          if (res.status === 404) break;
+          return NextResponse.json({ error: `Gemini API 오류: ${JSON.stringify(err)}` }, { status: 500 });
+        }
+        const data = await res.json();
+        const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text || '요약을 생성할 수 없습니다.';
+        return NextResponse.json({ summary, model });
+      } catch (e) {
+        return NextResponse.json({ error: String(e) }, { status: 500 });
       }
-    );
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      return NextResponse.json({ error: `Gemini API 오류: ${JSON.stringify(err)}` }, { status: 500 });
     }
-
-    const data = await res.json();
-    const summary = data?.candidates?.[0]?.content?.parts?.[0]?.text || '요약을 생성할 수 없습니다.';
-    return NextResponse.json({ summary });
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
   }
+
+  return NextResponse.json({ error: '현재 Gemini 서버가 혼잡합니다. 잠시 후 다시 시도해주세요.' }, { status: 503 });
 }
