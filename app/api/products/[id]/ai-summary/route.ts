@@ -95,7 +95,7 @@ ${recordLines}
 6. 전체 200자 이내로 간결하게 (불필요한 소제목/마크다운 형식 없이 자연스러운 문장으로)`;
 
   // Groq models to try in order (free tier)
-  const MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it'];
+  const MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768'];
 
   for (const model of MODELS) {
     for (let attempt = 0; attempt < 2; attempt++) {
