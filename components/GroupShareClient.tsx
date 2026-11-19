@@ -13,7 +13,7 @@ interface Product {
 
 interface RecordRow {
   template_id: string; item_name: string; standard: string; file_url: string; sort_order: number;
-  status: string; qa_notes: string; standard_notes: string; due_date: string; updated_at: string;
+  status: string; qa_notes: string; standard_notes: string; due_date: string; updated_at: string; priority: number;
 }
 
 interface Props {
