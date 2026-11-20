@@ -8,8 +8,9 @@ import ChatWidget from '@/components/ChatWidget';
 import MfrScheduleCalendar from '@/components/MfrScheduleCalendar';
 import ProductLabelImages from '@/components/ProductLabelImages';
 
-export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
+export default async function SharePage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ filter?: string; includeNotes?: string }> }) {
   const { token } = await params;
+  const { filter, includeNotes } = await searchParams;
   const db = getDb();
 
   const shareRow = db.prepare('SELECT product_id FROM share_tokens WHERE token = ?').get(token) as { product_id: string } | undefined;
@@ -46,6 +47,10 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
   `).all(shareRow.product_id, shareRow.product_id) as Array<{
     template_id: string; item_name: string; standard: string; file_url: string; sort_order: number; status: string; qa_notes: string; standard_notes: string; due_date: string; updated_at: string; priority: number;
   }>;
+
+  const displayedRecords = filter === 'pending'
+    ? records.filter(r => r.status === '미완료' || r.status === '진행중' || r.status === '보류')
+    : records;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -130,7 +135,12 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
               </div>
             )}
             <h2 className="text-base font-semibold text-slate-700 mb-3">QA 체크리스트</h2>
-            <QATable productId={shareRow.product_id} initialRecords={records} readOnly={true} />
+            <QATable productId={shareRow.product_id} initialRecords={displayedRecords} readOnly={true} />
+            {includeNotes === 'true' && (
+              <div className="mt-4">
+                <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />
+              </div>
+            )}
           </div>
           <ProductLabelImages productId={shareRow.product_id} readOnly={true} initialImages={labelImages} />
           <ProductNotes productId={shareRow.product_id} initialNotes={product.product_notes || ''} readOnly={true} />

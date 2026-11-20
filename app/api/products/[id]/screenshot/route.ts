@@ -22,7 +22,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!shareRow) return NextResponse.json({ error: 'No share token — generate a share link first' }, { status: 400 });
 
   const port = process.env.PORT || '3000';
-  const url = `http://localhost:${port}/share/${shareRow.token}?t=${Date.now()}`;
+  const filter = req.nextUrl.searchParams.get('filter');
+  const includeNotes = req.nextUrl.searchParams.get('includeNotes');
+  const qs = new URLSearchParams({ t: String(Date.now()) });
+  if (filter) qs.set('filter', filter);
+  if (includeNotes) qs.set('includeNotes', includeNotes);
+  const url = `http://localhost:${port}/share/${shareRow.token}?${qs.toString()}`;
 
   try {
     const { chromium } = await import('playwright-core');

@@ -4,6 +4,60 @@ import dynamic from 'next/dynamic';
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false });
 
+function parseNotesHtml(html: string): string[] {
+  const text = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"');
+  return text.split('\n').map(l => l.trim()).filter(Boolean);
+}
+
+type NoteSeg = { type: 'kv'; pairs: { key: string; val: string }[] } | { type: 'text'; line: string };
+
+function ReadOnlyNotes({ html }: { html: string }) {
+  const lines = parseNotesHtml(html);
+  if (!lines.length) return <p className="text-sm text-slate-400">내용 없음</p>;
+
+  const kvRe = /^([^:：]{1,20})[：:]\s*(.+)$/;
+  const segs: NoteSeg[] = [];
+
+  for (const line of lines) {
+    const m = line.match(kvRe);
+    if (m) {
+      const last = segs[segs.length - 1];
+      if (last?.type === 'kv') last.pairs.push({ key: m[1].trim(), val: m[2].trim() });
+      else segs.push({ type: 'kv', pairs: [{ key: m[1].trim(), val: m[2].trim() }] });
+    } else {
+      segs.push({ type: 'text', line });
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {segs.map((seg, i) =>
+        seg.type === 'kv' ? (
+          <div key={i} className="grid grid-cols-[auto_1fr] border border-slate-200 rounded-lg overflow-hidden text-sm">
+            {seg.pairs.flatMap((p, j) => [
+              <span key={`k${j}`} className={`px-3 py-2 bg-slate-50 text-slate-500 font-medium whitespace-nowrap${j < seg.pairs.length - 1 ? ' border-b border-slate-100' : ''}`}>{p.key}</span>,
+              <span key={`v${j}`} className={`px-3 py-2 text-slate-700${j < seg.pairs.length - 1 ? ' border-b border-slate-100' : ''}`}>{p.val}</span>,
+            ])}
+          </div>
+        ) : (
+          <p key={i} className="text-sm text-slate-700 leading-relaxed">{seg.line}</p>
+        )
+      )}
+    </div>
+  );
+}
+
 interface Props {
   productId: string;
   initialNotes: string;
@@ -47,10 +101,9 @@ export default function ProductNotes({ productId, initialNotes, readOnly = false
       {open && (
         <div className="p-4">
           {readOnly ? (
-            <div
-              className="prose prose-sm max-w-none text-slate-700 min-h-[60px]"
-              dangerouslySetInnerHTML={{ __html: notes || '<p class="text-slate-400">내용 없음</p>' }}
-            />
+            <div className="min-h-[40px]">
+              <ReadOnlyNotes html={notes || ''} />
+            </div>
           ) : (
             <RichTextEditor
               content={notes}
