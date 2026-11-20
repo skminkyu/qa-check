@@ -24,20 +24,32 @@ function parseNotesHtml(html: string): string[] {
 type Row = { key: string; val: string };
 
 function buildRows(lines: string[]): Row[] {
-  const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
+  // "숫자. " 형태만 대항목(numbered item) 시작
   const isNewItem = (line: string) => /^\d+\. /.test(line);
+  // 대항목에 인라인 값이 있는 경우: "1. 항목명: 값"
+  const numberedKvRe = /^(\d+\. [^:：]+)[：:]\s*(.+)$/;
+  // 일반 key:value (non-numbered)
+  const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
+
   const rows: Row[] = [];
+  let current: Row | null = null;  // 현재 처리 중인 numbered item
+
   for (const line of lines) {
-    const m = line.match(kvRe);
-    if (m) {
-      rows.push({ key: m[1].trim(), val: m[2].trim() });
+    if (isNewItem(line)) {
+      // 대항목 시작: 인라인 값 여부 확인
+      const m = line.match(numberedKvRe);
+      current = m
+        ? { key: m[1].trim(), val: m[2].trim() }
+        : { key: line, val: '' };
+      rows.push(current);
+    } else if (current !== null) {
+      // 대항목 블록 내부 — 다음 "숫자. " 전까지 모두 value에 추가
+      current.val = current.val ? current.val + '\n' + line : line;
     } else {
-      const last = rows[rows.length - 1];
-      if (last && last.key !== '' && !isNewItem(line)) {
-        last.val += '\n' + line;
-      } else {
-        rows.push({ key: '', val: line });
-      }
+      // 대항목 블록 밖 — 일반 kv 또는 텍스트
+      const m = line.match(kvRe);
+      if (m) rows.push({ key: m[1].trim(), val: m[2].trim() });
+      else rows.push({ key: '', val: line });
     }
   }
   return rows;

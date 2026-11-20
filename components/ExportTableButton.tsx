@@ -42,14 +42,23 @@ function parseNotesHtml(html: string): { key: string; val: string }[] {
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   if (!lines.length) return [];
-  const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
   const isNewItem = (l: string) => /^\d+\. /.test(l);
+  const numberedKvRe = /^(\d+\. [^:：]+)[：:]\s*(.+)$/;
+  const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
   const pairs: { key: string; val: string }[] = [];
+  let current: { key: string; val: string } | null = null;
   for (const line of lines) {
-    const m = line.match(kvRe);
-    if (m) { pairs.push({ key: m[1].trim(), val: m[2].trim() }); }
-    else if (pairs.length > 0 && pairs[pairs.length - 1].key !== '' && !isNewItem(line)) { pairs[pairs.length - 1].val += '\n' + line; }
-    else { pairs.push({ key: '', val: line }); }
+    if (isNewItem(line)) {
+      const m = line.match(numberedKvRe);
+      current = m ? { key: m[1].trim(), val: m[2].trim() } : { key: line, val: '' };
+      pairs.push(current);
+    } else if (current !== null) {
+      current.val = current.val ? current.val + '\n' + line : line;
+    } else {
+      const m = line.match(kvRe);
+      if (m) pairs.push({ key: m[1].trim(), val: m[2].trim() });
+      else pairs.push({ key: '', val: line });
+    }
   }
   return pairs;
 }
