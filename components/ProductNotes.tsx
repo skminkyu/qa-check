@@ -20,50 +20,52 @@ function parseNotesHtml(html: string): string[] {
   return text.split('\n').map(l => l.trim()).filter(Boolean);
 }
 
-type NoteSeg = { type: 'kv'; pairs: { key: string; val: string }[] } | { type: 'text'; line: string };
+
+type Row = { key: string; val: string };
+
+function buildRows(lines: string[]): Row[] {
+  const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
+  const isNewItem = (line: string) => /^\d+\. /.test(line);
+  const rows: Row[] = [];
+  for (const line of lines) {
+    const m = line.match(kvRe);
+    if (m) {
+      rows.push({ key: m[1].trim(), val: m[2].trim() });
+    } else {
+      const last = rows[rows.length - 1];
+      if (last && last.key !== '' && !isNewItem(line)) {
+        last.val += '\n' + line;
+      } else {
+        rows.push({ key: '', val: line });
+      }
+    }
+  }
+  return rows;
+}
 
 function ReadOnlyNotes({ html }: { html: string }) {
   const lines = parseNotesHtml(html);
   if (!lines.length) return <p className="text-sm text-slate-400">내용 없음</p>;
 
-  const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
-  // A line starting with digit is a new numbered item; others may be continuations
-  // Only "숫자. " (digit + period + space) starts a new main item; "1)" / "[ ]" / plain text = continuation
-  const isNewItem = (line: string) => /^\d+\. /.test(line);
-  const segs: NoteSeg[] = [];
-
-  for (const line of lines) {
-    const m = line.match(kvRe);
-    if (m) {
-      const last = segs[segs.length - 1];
-      if (last?.type === 'kv') last.pairs.push({ key: m[1].trim(), val: m[2].trim() });
-      else segs.push({ type: 'kv', pairs: [{ key: m[1].trim(), val: m[2].trim() }] });
-    } else {
-      const last = segs[segs.length - 1];
-      // Non-numbered lines after a kv pair = continuation of that row's value
-      if (last?.type === 'kv' && last.pairs.length > 0 && !isNewItem(line)) {
-        last.pairs[last.pairs.length - 1].val += '\n' + line;
-      } else {
-        segs.push({ type: 'text', line });
-      }
-    }
-  }
+  const rows = buildRows(lines);
 
   return (
-    <div className="space-y-2">
-      {segs.map((seg, i) =>
-        seg.type === 'kv' ? (
-          <div key={i} className="grid grid-cols-[auto_1fr] border border-slate-200 rounded-lg overflow-hidden text-sm">
-            {seg.pairs.flatMap((p, j) => [
-              <span key={`k${j}`} className={`px-3 py-2 bg-slate-50 text-slate-500 font-medium whitespace-nowrap align-top${j < seg.pairs.length - 1 ? ' border-b border-slate-100' : ''}`}>{p.key}</span>,
-              <span key={`v${j}`} className={`px-3 py-2 text-slate-700 whitespace-pre-wrap leading-relaxed break-words${j < seg.pairs.length - 1 ? ' border-b border-slate-100' : ''}`}>{p.val}</span>,
-            ])}
-          </div>
-        ) : (
-          <p key={i} className="text-sm text-slate-700 leading-relaxed">{seg.line}</p>
-        )
-      )}
-    </div>
+    <table className="w-full text-sm" style={{ borderCollapse: 'collapse', border: '1px solid #e2e8f0' }}>
+      <tbody>
+        {rows.map((row, i) => (
+          <tr key={i} style={{ borderBottom: i < rows.length - 1 ? '1px solid #e2e8f0' : undefined }}>
+            {row.key ? (
+              <>
+                <td style={{ padding: '7px 12px', background: '#f8fafc', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top', borderRight: '1px solid #e2e8f0', width: '160px', fontSize: '13px' }}>{row.key}</td>
+                <td style={{ padding: '7px 12px', color: '#1e293b', whiteSpace: 'pre-wrap', lineHeight: 1.7, wordBreak: 'break-word', fontSize: '13px' }}>{row.val}</td>
+              </>
+            ) : (
+              <td colSpan={2} style={{ padding: '7px 12px', color: '#334155', lineHeight: 1.7, fontSize: '13px' }}>{row.val}</td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

@@ -48,7 +48,7 @@ function parseNotesHtml(html: string): { key: string; val: string }[] {
   for (const line of lines) {
     const m = line.match(kvRe);
     if (m) { pairs.push({ key: m[1].trim(), val: m[2].trim() }); }
-    else if (pairs.length > 0 && !isNewItem(line)) { pairs[pairs.length - 1].val += '\n' + line; }
+    else if (pairs.length > 0 && pairs[pairs.length - 1].key !== '' && !isNewItem(line)) { pairs[pairs.length - 1].val += '\n' + line; }
     else { pairs.push({ key: '', val: line }); }
   }
   return pairs;
