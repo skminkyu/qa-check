@@ -26,7 +26,9 @@ function ReadOnlyNotes({ html }: { html: string }) {
   const lines = parseNotesHtml(html);
   if (!lines.length) return <p className="text-sm text-slate-400">내용 없음</p>;
 
-  const kvRe = /^([^:：]{1,20})[：:]\s*(.+)$/;
+  const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
+  // A line starting with digit is a new numbered item; others may be continuations
+  const isNewItem = (line: string) => /^\d+[\.\s]/.test(line);
   const segs: NoteSeg[] = [];
 
   for (const line of lines) {
@@ -36,7 +38,13 @@ function ReadOnlyNotes({ html }: { html: string }) {
       if (last?.type === 'kv') last.pairs.push({ key: m[1].trim(), val: m[2].trim() });
       else segs.push({ type: 'kv', pairs: [{ key: m[1].trim(), val: m[2].trim() }] });
     } else {
-      segs.push({ type: 'text', line });
+      const last = segs[segs.length - 1];
+      // Non-numbered lines after a kv pair = continuation of that row's value
+      if (last?.type === 'kv' && last.pairs.length > 0 && !isNewItem(line)) {
+        last.pairs[last.pairs.length - 1].val += '\n' + line;
+      } else {
+        segs.push({ type: 'text', line });
+      }
     }
   }
 
@@ -46,8 +54,8 @@ function ReadOnlyNotes({ html }: { html: string }) {
         seg.type === 'kv' ? (
           <div key={i} className="grid grid-cols-[auto_1fr] border border-slate-200 rounded-lg overflow-hidden text-sm">
             {seg.pairs.flatMap((p, j) => [
-              <span key={`k${j}`} className={`px-3 py-2 bg-slate-50 text-slate-500 font-medium whitespace-nowrap${j < seg.pairs.length - 1 ? ' border-b border-slate-100' : ''}`}>{p.key}</span>,
-              <span key={`v${j}`} className={`px-3 py-2 text-slate-700${j < seg.pairs.length - 1 ? ' border-b border-slate-100' : ''}`}>{p.val}</span>,
+              <span key={`k${j}`} className={`px-3 py-2 bg-slate-50 text-slate-500 font-medium whitespace-nowrap align-top${j < seg.pairs.length - 1 ? ' border-b border-slate-100' : ''}`}>{p.key}</span>,
+              <span key={`v${j}`} className={`px-3 py-2 text-slate-700 whitespace-pre-wrap leading-relaxed break-words${j < seg.pairs.length - 1 ? ' border-b border-slate-100' : ''}`}>{p.val}</span>,
             ])}
           </div>
         ) : (
