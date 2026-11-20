@@ -259,20 +259,18 @@ export default function ExportTableButton({ productName, records, initialNotes }
               </button>
 
               {/* 상품확인정보 포함 토글 */}
-              {initialNotes && (
-                <div
-                  className="flex items-center justify-between px-4 py-3 border border-slate-200 rounded-xl cursor-pointer select-none hover:bg-slate-50 transition"
-                  onClick={() => setIncludeNotes(v => !v)}
-                >
-                  <div>
-                    <div className="text-sm font-medium text-slate-700">상품확인정보 포함</div>
-                    <div className="text-xs text-slate-400">표 아래 상품확인정보 표 추가</div>
-                  </div>
-                  <div className={`relative w-10 h-6 rounded-full transition-colors ${includeNotes ? 'bg-violet-500' : 'bg-slate-200'}`}>
-                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${includeNotes ? 'left-5' : 'left-1'}`} />
-                  </div>
+              <div
+                className="flex items-center justify-between px-4 py-3 border border-slate-200 rounded-xl cursor-pointer select-none hover:bg-slate-50 transition"
+                onClick={() => setIncludeNotes(v => !v)}
+              >
+                <div>
+                  <div className="text-sm font-medium text-slate-700">상품확인정보 포함</div>
+                  <div className="text-xs text-slate-400">표 아래 상품확인정보 표 추가</div>
                 </div>
-              )}
+                <div className={`relative w-10 h-6 rounded-full transition-colors ${includeNotes ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${includeNotes ? 'left-5' : 'left-1'}`} />
+                </div>
+              </div>
 
               {/* 미완료·진행중 항목만 */}
               <button
