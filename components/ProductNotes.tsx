@@ -28,7 +28,8 @@ function ReadOnlyNotes({ html }: { html: string }) {
 
   const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
   // A line starting with digit is a new numbered item; others may be continuations
-  const isNewItem = (line: string) => /^\d+[\.\s]/.test(line);
+  // Only "숫자. " (digit + period + space) starts a new main item; "1)" / "[ ]" / plain text = continuation
+  const isNewItem = (line: string) => /^\d+\. /.test(line);
   const segs: NoteSeg[] = [];
 
   for (const line of lines) {
