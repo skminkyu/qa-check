@@ -35,45 +35,83 @@ const STATUS_BG: Record<string, string> = {
   '미완료':  '#fee2e2',
 };
 
-function parseNotesHtml(html: string): { key: string; val: string }[] {
-  const text = html
-    .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<\/div>/gi, '\n')
-    .replace(/<\/li>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  if (!lines.length) return [];
+// 인라인 서식(색상·볼드 등) 보존하면서 블록 단위로 분리
+function parseNotesRich(html: string): { key: string; richVal: string }[] {
+  const withNewlines = html
+    .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n').replace(/<\/li>/gi, '\n');
+  const blockRemoved = withNewlines.replace(/<(p|div|ul|ol|li|h[1-6])[^>]*>/gi, '');
+
+  const lines = blockRemoved.split('\n').map(chunk => {
+    const rich = chunk.trim();
+    if (!rich) return null;
+    const plain = rich.replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+    return plain ? { plain, rich } : null;
+  }).filter((x): x is { plain: string; rich: string } => x !== null);
+
   const isNewItem = (l: string) => /^\d+\. /.test(l);
   const numberedKvRe = /^(\d+\. [^:：]+)[：:]\s*(.+)$/;
   const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
-  const pairs: { key: string; val: string }[] = [];
-  let current: { key: string; val: string } | null = null;
-  for (const line of lines) {
-    if (isNewItem(line)) {
-      const m = line.match(numberedKvRe);
-      current = m ? { key: m[1].trim(), val: m[2].trim() } : { key: line, val: '' };
-      pairs.push(current);
+
+  function richAfterColon(r: string): string {
+    let inTag = false;
+    for (let i = 0; i < r.length; i++) {
+      if (r[i] === '<') { inTag = true; continue; }
+      if (r[i] === '>') { inTag = false; continue; }
+      if (!inTag && (r[i] === ':' || r[i] === '：')) return r.substring(i + 1).trimStart();
+    }
+    return r;
+  }
+
+  const rows: { key: string; richVal: string }[] = [];
+  let current: { key: string; richVal: string } | null = null;
+
+  for (const { plain, rich } of lines) {
+    if (isNewItem(plain)) {
+      const m = plain.match(numberedKvRe);
+      current = m
+        ? { key: m[1].trim(), richVal: richAfterColon(rich) }
+        : { key: plain, richVal: '' };
+      rows.push(current);
     } else if (current !== null) {
-      current.val = current.val ? current.val + '\n' + line : line;
+      current.richVal = current.richVal ? current.richVal + '<br>' + rich : rich;
     } else {
-      const m = line.match(kvRe);
-      if (m) pairs.push({ key: m[1].trim(), val: m[2].trim() });
-      else pairs.push({ key: '', val: line });
+      const m = plain.match(kvRe);
+      if (m) rows.push({ key: m[1].trim(), richVal: richAfterColon(rich) });
+      else rows.push({ key: '', richVal: rich });
     }
   }
-  return pairs;
+  return rows;
 }
 
 function buildNotesHtml(notesHtml: string): string {
-  const pairs = parseNotesHtml(notesHtml);
-  if (!pairs.length) return '';
-  const rows = pairs.map(p => {
-    const isHeader = p.key === '' && /^■/.test(p.val);
+  const rows = parseNotesRich(notesHtml);
+  if (!rows.length) return '';
+
+  const S = {
+    border: 'border:1px solid #e2e8f0;',
+    pad: 'padding:7px 12px;',
+    font: 'font-size:13px;font-family:Arial,sans-serif;line-height:1.7;',
+    top: 'vertical-align:top;',
+  };
+
+  const tableRows = rows.map(row => {
+    const isHeader = row.key === '' && /^■/.test(row.richVal.replace(/<[^>]+>/g, ''));
     if (isHeader) {
-      return `<tr><td colspan="2" style="border:1px solid #cbd5e1;padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;font-family:Arial,sans-serif;">${p.val}</td></tr>`;
+      return `<tr><td colspan="2" style="${S.border}${S.pad}${S.font}color:#1e293b;font-weight:700;">${row.richVal}</td></tr>`;
     }
-    return `<tr><td style="border:1px solid #cbd5e1;padding:6px 10px;background:#f8fafc;color:#475569;font-weight:600;font-size:11px;font-family:Arial,sans-serif;white-space:nowrap;vertical-align:top;">${p.key || '　'}</td><td style="border:1px solid #cbd5e1;padding:6px 10px;color:#334155;font-size:11px;font-family:Arial,sans-serif;white-space:pre-wrap;vertical-align:top;">${p.val}</td></tr>`;
+    if (row.key) {
+      return `<tr>
+        <td style="${S.border}${S.pad}${S.font}${S.top}background:#f8fafc;color:#64748b;font-weight:600;white-space:nowrap;width:160px;">${row.key}</td>
+        <td style="${S.border}${S.pad}${S.font}${S.top}color:#1e293b;">${row.richVal || '&nbsp;'}</td>
+      </tr>`;
+    }
+    return `<tr><td colspan="2" style="${S.border}${S.pad}${S.font}color:#1e293b;">${row.richVal}</td></tr>`;
   }).join('');
-  return `<br><table style="border-collapse:collapse;font-family:Arial,sans-serif;width:100%;min-width:820px;margin-top:8px;"><thead><tr><td colspan="2" style="padding:8px 14px;background:#334155;color:#ffffff;font-size:13px;font-weight:700;font-family:Arial,sans-serif;">상품확인정보</td></tr></thead><tbody>${rows}</tbody></table>`;
+
+  return `<br><table style="border-collapse:collapse;width:100%;min-width:820px;margin-top:8px;border:1px solid #e2e8f0;"><tbody>${tableRows}</tbody></table>`;
 }
 
 function buildHtml(productName: string, records: QARecord[], mode: Mode, notes?: string): string {
@@ -259,20 +297,18 @@ export default function ExportTableButton({ productName, records, initialNotes }
               </button>
 
               {/* 상품확인정보 포함 토글 */}
-              {initialNotes && (
-                <div
-                  className="flex items-center justify-between px-4 py-3 border border-slate-200 rounded-xl cursor-pointer select-none hover:bg-slate-50 transition"
-                  onClick={() => setIncludeNotes(v => !v)}
-                >
-                  <div>
-                    <div className="text-sm font-medium text-slate-700">상품확인정보 포함</div>
-                    <div className="text-xs text-slate-400">표 아래 상품확인정보 표 추가</div>
-                  </div>
-                  <div className={`relative w-10 h-6 rounded-full transition-colors ${includeNotes ? 'bg-violet-500' : 'bg-slate-200'}`}>
-                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${includeNotes ? 'left-5' : 'left-1'}`} />
-                  </div>
+              <div
+                className="flex items-center justify-between px-4 py-3 border border-slate-200 rounded-xl cursor-pointer select-none hover:bg-slate-50 transition"
+                onClick={() => setIncludeNotes(v => !v)}
+              >
+                <div>
+                  <div className="text-sm font-medium text-slate-700">상품확인정보 포함</div>
+                  <div className="text-xs text-slate-400">표 아래 상품확인정보 표 추가</div>
                 </div>
-              )}
+                <div className={`relative w-10 h-6 rounded-full transition-colors ${includeNotes ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${includeNotes ? 'left-5' : 'left-1'}`} />
+                </div>
+              </div>
 
               {/* 미완료·진행중 항목만 */}
               <button
