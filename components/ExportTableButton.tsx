@@ -14,6 +14,7 @@ interface QARecord {
 interface Props {
   productName: string;
   records: QARecord[];
+  initialNotes?: string;
 }
 
 type Mode = 'all' | 'pending';
@@ -34,7 +35,35 @@ const STATUS_BG: Record<string, string> = {
   '미완료':  '#fee2e2',
 };
 
-function buildHtml(productName: string, records: QARecord[], mode: Mode): string {
+function parseNotesHtml(html: string): { key: string; val: string }[] {
+  const text = html
+    .replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+  const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
+  const isNewItem = (l: string) => /^\d+\. /.test(l);
+  const pairs: { key: string; val: string }[] = [];
+  for (const line of lines) {
+    const m = line.match(kvRe);
+    if (m) { pairs.push({ key: m[1].trim(), val: m[2].trim() }); }
+    else if (pairs.length > 0 && !isNewItem(line)) { pairs[pairs.length - 1].val += '\n' + line; }
+    else { pairs.push({ key: '', val: line }); }
+  }
+  return pairs;
+}
+
+function buildNotesHtml(notesHtml: string): string {
+  const pairs = parseNotesHtml(notesHtml);
+  if (!pairs.length) return '';
+  const rows = pairs.map(p =>
+    `<tr><td style="border:1px solid #cbd5e1;padding:6px 10px;background:#f8fafc;color:#475569;font-weight:600;font-size:11px;font-family:Arial,sans-serif;white-space:nowrap;vertical-align:top;">${p.key || '　'}</td><td style="border:1px solid #cbd5e1;padding:6px 10px;color:#334155;font-size:11px;font-family:Arial,sans-serif;white-space:pre-wrap;vertical-align:top;">${p.val}</td></tr>`
+  ).join('');
+  return `<br><table style="border-collapse:collapse;font-family:Arial,sans-serif;width:100%;min-width:820px;margin-top:8px;"><thead><tr><td colspan="2" style="padding:8px 14px;background:#334155;color:#ffffff;font-size:13px;font-weight:700;font-family:Arial,sans-serif;">상품확인정보</td></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function buildHtml(productName: string, records: QARecord[], mode: Mode, notes?: string): string {
   const subset = mode === 'pending'
     ? records.filter(r => r.status === '미완료' || r.status === '진행중' || r.status === '보류')
     : records;
@@ -91,14 +120,15 @@ function buildHtml(productName: string, records: QARecord[], mode: Mode): string
 <tbody>
 ${noRows || rows}
 </tbody>
-</table>`;
+</table>${notes ? buildNotesHtml(notes) : ''}`;
 }
 
-export default function ExportTableButton({ productName, records }: Props) {
+export default function ExportTableButton({ productName, records, initialNotes }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle');
   const [copiedMode, setCopiedMode] = useState<Mode | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [includeNotes, setIncludeNotes] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
@@ -118,7 +148,7 @@ export default function ExportTableButton({ productName, records }: Props) {
   async function copy(mode: Mode) {
     setCopyStatus('copying');
     try {
-      const html  = buildHtml(productName, records, mode);
+      const html  = buildHtml(productName, records, mode, includeNotes ? (initialNotes || '') : undefined);
       const subset = mode === 'pending'
         ? records.filter(r => r.status === '미완료' || r.status === '진행중' || r.status === '보류')
         : records;
@@ -214,6 +244,22 @@ export default function ExportTableButton({ productName, records }: Props) {
                   </>
                 )}
               </button>
+
+              {/* 상품확인정보 포함 토글 */}
+              {initialNotes && (
+                <div
+                  className="flex items-center justify-between px-4 py-3 border border-slate-200 rounded-xl cursor-pointer select-none hover:bg-slate-50 transition"
+                  onClick={() => setIncludeNotes(v => !v)}
+                >
+                  <div>
+                    <div className="text-sm font-medium text-slate-700">상품확인정보 포함</div>
+                    <div className="text-xs text-slate-400">표 아래 상품확인정보 표 추가</div>
+                  </div>
+                  <div className={`relative w-10 h-6 rounded-full transition-colors ${includeNotes ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${includeNotes ? 'left-5' : 'left-1'}`} />
+                  </div>
+                </div>
+              )}
 
               {/* 미완료·진행중 항목만 */}
               <button
