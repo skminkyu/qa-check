@@ -66,9 +66,13 @@ function parseNotesHtml(html: string): { key: string; val: string }[] {
 function buildNotesHtml(notesHtml: string): string {
   const pairs = parseNotesHtml(notesHtml);
   if (!pairs.length) return '';
-  const rows = pairs.map(p =>
-    `<tr><td style="border:1px solid #cbd5e1;padding:6px 10px;background:#f8fafc;color:#475569;font-weight:600;font-size:11px;font-family:Arial,sans-serif;white-space:nowrap;vertical-align:top;">${p.key || '　'}</td><td style="border:1px solid #cbd5e1;padding:6px 10px;color:#334155;font-size:11px;font-family:Arial,sans-serif;white-space:pre-wrap;vertical-align:top;">${p.val}</td></tr>`
-  ).join('');
+  const rows = pairs.map(p => {
+    const isHeader = p.key === '' && /^■/.test(p.val);
+    if (isHeader) {
+      return `<tr><td colspan="2" style="border:1px solid #cbd5e1;padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;font-family:Arial,sans-serif;">${p.val}</td></tr>`;
+    }
+    return `<tr><td style="border:1px solid #cbd5e1;padding:6px 10px;background:#f8fafc;color:#475569;font-weight:600;font-size:11px;font-family:Arial,sans-serif;white-space:nowrap;vertical-align:top;">${p.key || '　'}</td><td style="border:1px solid #cbd5e1;padding:6px 10px;color:#334155;font-size:11px;font-family:Arial,sans-serif;white-space:pre-wrap;vertical-align:top;">${p.val}</td></tr>`;
+  }).join('');
   return `<br><table style="border-collapse:collapse;font-family:Arial,sans-serif;width:100%;min-width:820px;margin-top:8px;"><thead><tr><td colspan="2" style="padding:8px 14px;background:#334155;color:#ffffff;font-size:13px;font-weight:700;font-family:Arial,sans-serif;">상품확인정보</td></tr></thead><tbody>${rows}</tbody></table>`;
 }
 

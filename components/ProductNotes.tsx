@@ -4,78 +4,101 @@ import dynamic from 'next/dynamic';
 
 const RichTextEditor = dynamic(() => import('./RichTextEditor'), { ssr: false });
 
-function parseNotesHtml(html: string): string[] {
-  const text = html
+// HTML을 블록 단위로 분리하되 인라인 서식(색상, 볼드 등) 태그는 보존
+function parseNotesLines(html: string): { plain: string; rich: string }[] {
+  const withNewlines = html
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/p>/gi, '\n')
     .replace(/<\/div>/gi, '\n')
-    .replace(/<\/li>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"');
-  return text.split('\n').map(l => l.trim()).filter(Boolean);
+    .replace(/<\/li>/gi, '\n');
+  const blockRemoved = withNewlines.replace(/<(p|div|ul|ol|li|h[1-6])[^>]*>/gi, '');
+
+  return blockRemoved.split('\n')
+    .map(chunk => {
+      const rich = chunk.trim();
+      if (!rich) return null;
+      const plain = rich
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+        .trim();
+      return plain ? { plain, rich } : null;
+    })
+    .filter((x): x is { plain: string; rich: string } => x !== null);
 }
 
+// rich HTML에서 첫 번째 콜론(HTML 태그 밖) 이후 부분 추출
+function richAfterColon(rich: string): string {
+  let inTag = false;
+  for (let i = 0; i < rich.length; i++) {
+    if (rich[i] === '<') { inTag = true; continue; }
+    if (rich[i] === '>') { inTag = false; continue; }
+    if (!inTag && (rich[i] === ':' || rich[i] === '：')) return rich.substring(i + 1).trimStart();
+  }
+  return rich;
+}
 
-type Row = { key: string; val: string };
+type Row = { key: string; val: string; richVal: string };
 
-function buildRows(lines: string[]): Row[] {
-  // "숫자. " 형태만 대항목(numbered item) 시작
-  const isNewItem = (line: string) => /^\d+\. /.test(line);
-  // 대항목에 인라인 값이 있는 경우: "1. 항목명: 값"
+function buildRows(lines: { plain: string; rich: string }[]): Row[] {
+  const isNewItem = (l: string) => /^\d+\. /.test(l);
   const numberedKvRe = /^(\d+\. [^:：]+)[：:]\s*(.+)$/;
-  // 일반 key:value (non-numbered)
   const kvRe = /^([^:：]{1,25})[：:]\s*(.+)$/;
-
   const rows: Row[] = [];
-  let current: Row | null = null;  // 현재 처리 중인 numbered item
+  let current: Row | null = null;
 
-  for (const line of lines) {
-    if (isNewItem(line)) {
-      // 대항목 시작: 인라인 값 여부 확인
-      const m = line.match(numberedKvRe);
-      current = m
-        ? { key: m[1].trim(), val: m[2].trim() }
-        : { key: line, val: '' };
+  for (const { plain, rich } of lines) {
+    if (isNewItem(plain)) {
+      const m = plain.match(numberedKvRe);
+      if (m) {
+        current = { key: m[1].trim(), val: m[2].trim(), richVal: richAfterColon(rich) };
+      } else {
+        current = { key: plain, val: '', richVal: '' };
+      }
       rows.push(current);
     } else if (current !== null) {
-      // 대항목 블록 내부 — 다음 "숫자. " 전까지 모두 value에 추가
-      current.val = current.val ? current.val + '\n' + line : line;
+      current.val = current.val ? current.val + '\n' + plain : plain;
+      current.richVal = current.richVal ? current.richVal + '<br>' + rich : rich;
     } else {
-      // 대항목 블록 밖 — 일반 kv 또는 텍스트
-      const m = line.match(kvRe);
-      if (m) rows.push({ key: m[1].trim(), val: m[2].trim() });
-      else rows.push({ key: '', val: line });
+      const m = plain.match(kvRe);
+      if (m) rows.push({ key: m[1].trim(), val: m[2].trim(), richVal: richAfterColon(rich) });
+      else rows.push({ key: '', val: plain, richVal: rich });
     }
   }
   return rows;
 }
 
 function ReadOnlyNotes({ html }: { html: string }) {
-  const lines = parseNotesHtml(html);
+  const lines = parseNotesLines(html);
   if (!lines.length) return <p className="text-sm text-slate-400">내용 없음</p>;
-
   const rows = buildRows(lines);
 
   return (
     <table className="w-full text-sm" style={{ borderCollapse: 'collapse', border: '1px solid #e2e8f0' }}>
       <tbody>
-        {rows.map((row, i) => (
-          <tr key={i} style={{ borderBottom: i < rows.length - 1 ? '1px solid #e2e8f0' : undefined }}>
-            {row.key ? (
-              <>
-                <td style={{ padding: '7px 12px', background: '#f8fafc', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top', borderRight: '1px solid #e2e8f0', width: '160px', fontSize: '13px' }}>{row.key}</td>
-                <td style={{ padding: '7px 12px', color: '#1e293b', whiteSpace: 'pre-wrap', lineHeight: 1.7, wordBreak: 'break-word', fontSize: '13px' }}>{row.val}</td>
-              </>
-            ) : (
-              <td colSpan={2} style={{ padding: '7px 12px', color: '#334155', lineHeight: 1.7, fontSize: '13px' }}>{row.val}</td>
-            )}
-          </tr>
-        ))}
+        {rows.map((row, i) => {
+          const isHeader = row.key === '' && /^■/.test(row.val);
+          return (
+            <tr key={i} style={{ borderBottom: i < rows.length - 1 ? '1px solid #e2e8f0' : undefined }}>
+              {row.key ? (
+                <>
+                  <td style={{ padding: '7px 12px', background: '#f8fafc', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap', verticalAlign: 'top', borderRight: '1px solid #e2e8f0', width: '160px', fontSize: '13px' }}>{row.key}</td>
+                  <td
+                    style={{ padding: '7px 12px', color: '#1e293b', lineHeight: 1.7, wordBreak: 'break-word', fontSize: '13px', verticalAlign: 'top' }}
+                    dangerouslySetInnerHTML={{ __html: row.richVal }}
+                  />
+                </>
+              ) : (
+                <td
+                  colSpan={2}
+                  style={{ padding: '7px 12px', color: '#1e293b', lineHeight: 1.7, fontSize: isHeader ? '15px' : '13px', fontWeight: isHeader ? 700 : 400 }}
+                  dangerouslySetInnerHTML={{ __html: row.richVal }}
+                />
+              )}
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
