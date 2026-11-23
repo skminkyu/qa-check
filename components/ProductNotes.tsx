@@ -49,7 +49,11 @@ function buildRows(lines: { plain: string; rich: string }[]): Row[] {
   let current: Row | null = null;
 
   for (const { plain, rich } of lines) {
-    if (isNewItem(plain)) {
+    if (/^■/.test(plain)) {
+      // ■ 헤더 줄 — 현재 블록을 끊고 독립 행으로
+      current = null;
+      rows.push({ key: '', val: plain, richVal: rich });
+    } else if (isNewItem(plain)) {
       const m = plain.match(numberedKvRe);
       if (m) {
         current = { key: m[1].trim(), val: m[2].trim(), richVal: richAfterColon(rich) };

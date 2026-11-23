@@ -69,7 +69,10 @@ function parseNotesRich(html: string): { key: string; richVal: string }[] {
   let current: { key: string; richVal: string } | null = null;
 
   for (const { plain, rich } of lines) {
-    if (isNewItem(plain)) {
+    if (/^■/.test(plain)) {
+      current = null;
+      rows.push({ key: '', richVal: rich });
+    } else if (isNewItem(plain)) {
       const m = plain.match(numberedKvRe);
       current = m
         ? { key: m[1].trim(), richVal: richAfterColon(rich) }
