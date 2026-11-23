@@ -103,7 +103,7 @@ function buildNotesHtml(notesHtml: string): string {
   const tableRows = rows.map(row => {
     const isHeader = row.key === '' && /^■/.test(row.richVal.replace(/<[^>]+>/g, ''));
     if (isHeader) {
-      return `<tr><td colspan="2" style="${S.border}padding:9px 14px;font-size:14px;font-family:Arial,sans-serif;font-weight:700;background:#1e293b;color:#ffffff;line-height:1.5;">${row.richVal}</td></tr>`;
+      return `<tr><td colspan="2" style="${S.border}padding:9px 14px;font-size:14px;font-family:Arial,sans-serif;font-weight:700;background:#ffffff;color:#1e293b;line-height:1.5;">${row.richVal}</td></tr>`;
     }
     if (row.key) {
       return `<tr>

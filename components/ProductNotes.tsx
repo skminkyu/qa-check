@@ -96,7 +96,7 @@ function ReadOnlyNotes({ html }: { html: string }) {
               ) : isHeader ? (
                 <td
                   colSpan={2}
-                  style={{ padding: '9px 14px', background: '#1e293b', color: '#ffffff', lineHeight: 1.5, fontSize: '14px', fontWeight: 700 }}
+                  style={{ padding: '9px 14px', background: '#ffffff', color: '#1e293b', lineHeight: 1.5, fontSize: '14px', fontWeight: 700 }}
                   dangerouslySetInnerHTML={{ __html: row.richVal }}
                 />
               ) : (
