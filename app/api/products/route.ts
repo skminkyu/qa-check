@@ -24,8 +24,33 @@ export async function POST(req: NextRequest) {
 
   const db = getDb();
   const id = uuidv4();
-  db.prepare('INSERT INTO products (id, category_id, name, partner_name, md_name) VALUES (?,?,?,?,?)').run(
-    id, categoryId, name, partnerName || null, mdName || null
+
+  // 화장품 카테고리면 상품확인정보 기본값 생성
+  const category = db.prepare('SELECT name FROM categories WHERE id = ?').get(categoryId) as { name: string } | undefined;
+  let defaultNotes = '';
+  if (category?.name === '화장품') {
+    const lines = [
+      `■ ${name}`,
+      '1. 화장품제조원/책임판매원 : ',
+      '2. 용량 : ',
+      '3. 사용기한 및 제조년월 : 제조일로부터 (  )개월 (제조년월 : )',
+      '4. 용법용량 : ',
+      '5. 효능효과 : ',
+      '6. 전성분 : ',
+      '7. 기능/특징',
+      '- ',
+      '8. 사용상 주의사항 : ',
+      '1) 화장품 사용 시 또는 사용 후 직사광선에 의하여 사용부위가 붉은 반점, 부어오름 또는 가려움증 등의 이상 증상이나 부작용이 있는 경우에는 전문의 등과 상담할 것',
+      '2) 상처가 있는 부위 등에는 사용을 자제할 것',
+      '3) 보관 및 취급시의 주의사항',
+      '가. 어린이의 손이 닿지 않는 곳에 보관할 것',
+      '나. 직사광선을 피해서 보관할 것',
+    ];
+    defaultNotes = lines.map(l => `<p>${l}</p>`).join('');
+  }
+
+  db.prepare('INSERT INTO products (id, category_id, name, partner_name, md_name, product_notes) VALUES (?,?,?,?,?,?)').run(
+    id, categoryId, name, partnerName || null, mdName || null, defaultNotes || null
   );
 
   // Auto-create QA records for all templates in this category
